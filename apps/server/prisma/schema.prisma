@@ -1,0 +1,738 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  domain      String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  crawlJobs       CrawlJob[]
+  analysisReports AnalysisReport[]
+  keywordRankings KeywordRanking[]
+  seoIssues       SeoIssue[]
+  User            User?            @relation(fields: [userId], references: [id])
+  userId          String?          @db.ObjectId
+
+  @@map("projects")
+}
+
+model CrawlJob {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  projectId  String      @db.ObjectId
+  status     CrawlStatus @default(QUEUED)
+  queuedAt   DateTime    @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+  error      String?
+
+  // Crawl configuration
+  maxPages  Int?    @default(100)
+  maxDepth  Int?    @default(3)
+  userAgent String?
+
+  // Progress tracking
+  totalPages     Int @default(0)
+  processedPages Int @default(0)
+  failedPages    Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pages   Page[]
+
+  @@map("crawl_jobs")
+}
+
+model Page {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  crawlJobId   String  @db.ObjectId
+  url          String
+  httpStatus   Int
+  responseTime Int // in milliseconds
+  htmlSnapshot String // raw HTML content
+  title        String?
+
+  // Page metadata
+  contentType   String?
+  contentLength Int?
+  lastModified  DateTime?
+  redirectUrl   String?
+
+  crawledAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  crawlJob CrawlJob  @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
+  seoAudit SeoAudit?
+
+  @@unique([crawlJobId, url])
+  @@map("pages")
+}
+
+model SeoAudit {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  pageId String @unique @db.ObjectId
+
+  // Title metrics
+  titleTag      String?
+  titleLength   Int?
+  titleExists   Boolean @default(false)
+  titleTooLong  Boolean @default(false)
+  titleTooShort Boolean @default(false)
+
+  // Meta description metrics
+  metaDescription         String?
+  metaDescriptionLength   Int?
+  metaDescriptionExists   Boolean @default(false)
+  metaDescriptionTooLong  Boolean @default(false)
+  metaDescriptionTooShort Boolean @default(false)
+
+  // Heading metrics
+  h1Count       Int      @default(0)
+  h1Tags        String[]
+  h2Count       Int      @default(0)
+  h3Count       Int      @default(0)
+  h4Count       Int      @default(0)
+  h5Count       Int      @default(0)
+  h6Count       Int      @default(0)
+  hasMultipleH1 Boolean  @default(false)
+  missingH1     Boolean  @default(true)
+
+  // Canonical and robots
+  canonicalUrl  String?
+  hasCanonical  Boolean @default(false)
+  robotsContent String?
+  hasRobotsMeta Boolean @default(false)
+  isIndexable   Boolean @default(true)
+  isFollowable  Boolean @default(true)
+
+  // Schema.org structured data
+  hasSchemaOrg   Boolean  @default(false)
+  schemaOrgTypes String[]
+  jsonLdCount    Int      @default(0)
+  microdataCount Int      @default(0)
+  rdfaCount      Int      @default(0)
+
+  // Images
+  totalImages        Int     @default(0)
+  imagesWithoutAlt   Int     @default(0)
+  imagesWithAlt      Int     @default(0)
+  imagesWithoutTitle Int     @default(0)
+  imagesOptimized    Boolean @default(false)
+
+  // Links
+  internalLinksCount Int @default(0)
+  externalLinksCount Int @default(0)
+  brokenLinksCount   Int @default(0)
+  noFollowLinksCount Int @default(0)
+
+  // Link details
+  internalLinks String[]
+  externalLinks String[]
+  brokenLinks   String[]
+
+  // Performance metrics
+  loadTime Int? // in milliseconds
+  pageSize Int? // in bytes
+
+  // Content metrics
+  wordCount    Int?
+  contentRatio Float? // content to HTML ratio
+  hasValidLang Boolean @default(false)
+  languageCode String?
+
+  // Social media
+  hasOpenGraph   Boolean @default(false)
+  hasTwitterCard Boolean @default(false)
+
+  // Technical SEO
+  hasViewport         Boolean @default(false)
+  hasCharset          Boolean @default(false)
+  isHttps             Boolean @default(false)
+  hasSitemapReference Boolean @default(false)
+
+  // Overall scores
+  seoScore           Float? // 0-100
+  performanceScore   Float? // 0-100
+  accessibilityScore Float? // 0-100
+
+  // Audit metadata
+  auditedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@map("seo_audits")
+}
+
+enum CrawlStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  PAUSED
+}
+
+// User model
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  isAdmin       Boolean   @default(false)
+
+  // Subscription Info
+  subscriptionId String? @db.ObjectId
+
+  // Billing
+  intasendCustomerId String?
+
+  // Trial
+  trialEndsAt DateTime?
+  trialUsed   Boolean   @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts         Account[]
+  sessions         Session[]
+  projects         Project[]
+  subscriptions    Subscription[]
+  transactions     Transaction[]
+  usageRecords     SubscriptionUsage[]
+  invoices         Invoice[]
+  paymentMethods   PaymentMethod[]
+  billingAddresses BillingAddress[]
+
+  @@map("users")
+}
+
+// Subscription Plan model
+model SubscriptionPlan {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String // "Free", "Pro", "Enterprise"
+  displayName String // "Professional Plan"
+  description String?
+
+  // Pricing
+  priceMonthly        Int // Price in cents (e.g., 2999 = $29.99)
+  priceYearly         Int? // Annual pricing (usually discounted)
+  intasendPaymentLink String? // IntaSend payment link
+  intasendCustomerId  String? // IntaSend customer ID
+
+  // Features & Limits
+  maxProjects         Int @default(0) // 0 = unlimited
+  maxKeywords         Int @default(0) // Keywords per project
+  maxAnalysesPerMonth Int @default(0) // Monthly analysis limit
+  maxReportsPerMonth  Int @default(0) // Report generation limit
+  maxCompetitors      Int @default(0) // Competitor tracking
+
+  // Feature Flags
+  hasAdvancedReports   Boolean @default(false)
+  hasAPIAccess         Boolean @default(false)
+  hasWhiteLabel        Boolean @default(false)
+  hasCustomBranding    Boolean @default(false)
+  hasPrioritySupport   Boolean @default(false)
+  hasTeamCollaboration Boolean @default(false)
+  hasCustomAlerts      Boolean @default(false)
+  hasDataExport        Boolean @default(false)
+
+  // Analysis Features
+  analysisFrequencies String[] // Allowed frequencies
+
+  // Status
+  isActive  Boolean @default(true)
+  isPopular Boolean @default(false) // For "Most Popular" badge
+  sortOrder Int     @default(0) // Display order
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  subscriptions Subscription[]
+  transactions  Transaction[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("subscription_plans")
+}
+
+// Subscription model
+model Subscription {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // User Information
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Plan Information
+  planId String           @db.ObjectId
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  // Transaction Information
+  transactionId String?      @db.ObjectId
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+
+  // Billing
+  status       SubscriptionStatus @default(ACTIVE)
+  billingCycle BillingCycle       @default(MONTHLY)
+
+  // Dates
+  startDate   DateTime
+  endDate     DateTime
+  cancelledAt DateTime?
+  autoRenew   Boolean   @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  invoices Invoice[]
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([endDate])
+  @@map("subscriptions")
+}
+
+// Transaction model
+model Transaction {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // User Information
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Plan Information
+  planId String           @db.ObjectId
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  // Transaction Details
+  amount      Int // Amount in cents
+  currency    String            @default("KES")
+  status      TransactionStatus @default(PENDING)
+  providerRef String? // IntaSend transaction reference
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  // Relations
+  subscriptions Subscription[]
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([providerRef])
+  @@map("transactions")
+}
+
+// Subscription Usage model
+model SubscriptionUsage {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // User Information
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Usage Type
+  usageType  UsageType
+  resourceId String? // Project ID, Report ID, etc.
+
+  // Usage Details
+  quantity Int   @default(1)
+  metadata Json? // Additional usage context
+
+  // Timestamps
+  recordedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([usageType])
+  @@index([recordedAt])
+  @@map("subscription_usage")
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([provider, providerAccountId], name: "provider_providerAccountId")
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+
+  // New fields for access and refresh tokens
+  accessToken     String?  
+  refreshToken    String   @unique
+  accessTokenExp  DateTime // 15 minutes from creation
+  refreshTokenExp DateTime // 7 days from creation
+  isRevoked       Boolean  @default(false)
+  revokedAt       DateTime?
+  lastUsedAt      DateTime @default(now())
+  deviceInfo      String?  // User agent or device identifier
+  ipAddress       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([accessToken])
+  @@index([userId])
+  @@index([isRevoked])
+  @@map("sessions")
+}
+
+model Verification {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
+}
+
+model AnalysisReport {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String  @db.ObjectId
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  reportType      ReportType
+  seoScore        Int
+  performance     Json
+  seoMetrics      Json
+  technicalIssues Json
+  contentAnalysis Json
+
+  status        ReportStatus @default(COMPLETED)
+  executionTime Int?
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([projectId])
+  @@index([reportType])
+  @@index([createdAt])
+}
+
+model KeywordRanking {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String  @db.ObjectId
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  keyword          String
+  position         Int
+  previousPosition Int?
+  searchVolume     Int?
+  difficulty       Int?
+  cpc              Float?
+
+  searchEngine SearchEngine @default(GOOGLE)
+  location     String       @default("Global")
+  language     String       @default("en")
+  device       Device       @default(DESKTOP)
+
+  rankingUrl String?
+
+  firstTracked DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
+
+  @@unique([projectId, keyword, searchEngine, location, device])
+  @@index([projectId])
+  @@index([keyword])
+  @@index([position])
+}
+
+model SeoIssue {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String  @db.ObjectId
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String
+  category    IssueCategory
+  severity    IssueSeverity
+
+  affectedUrl String?
+  xpath       String?
+
+  status     IssueStatus @default(OPEN)
+  resolution String?
+
+  firstDetected DateTime  @default(now())
+  lastSeen      DateTime  @updatedAt
+  resolvedAt    DateTime?
+
+  @@index([projectId])
+  @@index([category])
+  @@index([severity])
+  @@index([status])
+}
+
+model Invoice {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // User & Subscription
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subscriptionId String?       @db.ObjectId
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  // IntaSend Information
+  intasendTransactionId String?
+  intasendPaymentId     String?
+
+  // Invoice Details
+  invoiceNumber String        @unique
+  status        InvoiceStatus
+
+  // Amounts (in cents)
+  subtotal   Int
+  tax        Int @default(0)
+  discount   Int @default(0)
+  total      Int
+  amountPaid Int @default(0)
+  amountDue  Int
+
+  currency String @default("usd")
+
+  // Billing Period
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Payment
+  paidAt        DateTime?
+  paymentMethod String? // "card", "bank_transfer", etc.
+
+  // Invoice URLs
+  hostedInvoiceUrl String?
+  invoicePdf       String?
+
+  // Timestamps
+  dueDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([intasendTransactionId])
+}
+
+model PaymentMethod {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // User
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // IntaSend
+  intasendPaymentMethodId String
+
+  // Card Details (for display)
+  type         String // "card", "bank_account", etc.
+  cardBrand    String? // "visa", "mastercard", etc.
+  cardLast4    String?
+  cardExpMonth Int?
+  cardExpYear  Int?
+
+  // Status
+  isDefault Boolean @default(false)
+  isActive  Boolean @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([intasendPaymentMethodId])
+}
+
+model BillingAddress {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // User
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Address Details
+  name       String?
+  company    String?
+  line1      String
+  line2      String?
+  city       String
+  state      String?
+  postalCode String
+  country    String
+
+  // Tax Information
+  taxId String? // VAT number, etc.
+
+  // Status
+  isDefault Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  CANCELLED
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  PAUSED
+  EXPIRED
+  SUSPENDED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+  LIFETIME
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum UsageType {
+  PROJECT_CREATED
+  ANALYSIS_RUN
+  REPORT_GENERATED
+  KEYWORD_TRACKED
+  API_CALL
+  COMPETITOR_ADDED
+  EXPORT_DATA
+  CUSTOM_ALERT
+}
+
+enum ProjectStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+}
+
+enum AnalysisFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum ReportType {
+  FULL_AUDIT
+  PERFORMANCE
+  SEO_HEALTH
+  KEYWORD_TRACKING
+  COMPETITOR_ANALYSIS
+  TECHNICAL_SEO
+}
+
+enum ReportStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum SearchEngine {
+  GOOGLE
+  BING
+  YAHOO
+  DUCKDUCKGO
+}
+
+enum Device {
+  DESKTOP
+  MOBILE
+  TABLET
+}
+
+enum IssueCategory {
+  TECHNICAL_SEO
+  ON_PAGE_SEO
+  PERFORMANCE
+  ACCESSIBILITY
+  CONTENT
+  MOBILE
+  SECURITY
+}
+
+enum IssueSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  IGNORED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  UNCOLLECTIBLE
+  VOID
+  OVERDUE
+}

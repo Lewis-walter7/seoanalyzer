@@ -1,0 +1,23 @@
+File Path,Action,Priority,Risk Level,Notes
+apps/client/lib/prisma.ts,DELETE,High,High,Prisma client singleton - centralize on server
+apps/client/lib/auth.ts,MAJOR REFACTOR,High,High,Core auth config with Prisma client
+apps/client/prisma/seed.ts,MOVE TO SERVER,Medium,Low,Database seeding
+apps/client/app/api/auth/[...nextauth]/route.ts,DELETE,High,High,NextAuth handler
+apps/client/app/api/auth/register/route.ts,DELETE,High,High,Registration API with Prisma
+apps/client/lib/auth-client.ts,REFACTOR,Medium,Medium,Client-side auth utilities
+apps/client/lib/jwt.ts,REVIEW/REFACTOR,Medium,Medium,JWT handling
+apps/client/types/next-auth.d.ts,DELETE,Low,Low,NextAuth types
+apps/client/middleware.ts,MAJOR REFACTOR,High,High,Auth middleware
+apps/client/app/providers.tsx,REFACTOR,High,High,Remove NextAuth SessionProvider
+apps/client/app/components/navbar/navbar.tsx,REFACTOR,Medium,Medium,Auth state management
+apps/client/app/components/sidebar/sidebar.tsx,REFACTOR,Medium,Medium,Auth state management
+apps/client/app/components/dashboard/CreateProjectModal.tsx,REFACTOR,Medium,Medium,Auth context usage
+apps/client/components/SubscriptionPlans.tsx,REFACTOR,Medium,Medium,Auth context usage
+apps/client/app/login/page.tsx,MAJOR REFACTOR,High,Medium,Login page
+apps/client/app/signup/page.tsx,MAJOR REFACTOR,High,Medium,Signup page
+apps/client/app/api/subscription/me/route.ts,REFACTOR,Medium,Medium,Auth verification
+apps/client/app/api/projects/route.ts,REFACTOR,Medium,Medium,Auth verification with Prisma
+apps/client/lib/api.ts,REFACTOR,Medium,Medium,Server auth endpoints
+apps/client/lib/axios.ts,REFACTOR,Medium,Medium,Auth token handling
+apps/client/package.json,UPDATE,High,Low,Remove NextAuth and Prisma dependencies
+apps/client/bun.lock,UPDATE,Low,Low,Dependency lock file
