@@ -291,7 +291,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
               <ul className="space-y-3">
                 {generateFeatures(plan).map((feature, index) => (
                   <li key={index} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <Check className="w-4 h-4 text-green-500 shrink-0" />
                     <span className="text-sm">{feature}</span>
                   </li>
                 ))}

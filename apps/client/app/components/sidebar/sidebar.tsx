@@ -56,7 +56,7 @@ export default function Sidebar({ open, selectedProject }: SidebarProps) {
       } transition-all duration-300 h-screen bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col fixed lg:relative z-40`}
     >
       {/* Header Logo + Toggle */}
-      <div className="flex items-center justify-between p-2 border-b dark:border-gray-800 relative group min-h-[4rem]">
+      <div className="flex items-center justify-between p-2 border-b dark:border-gray-800 relative group min-h-16">
         {!collapsed && (
           <>
             <Image
@@ -105,7 +105,7 @@ export default function Sidebar({ open, selectedProject }: SidebarProps) {
                 : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
             } ${collapsed ? 'justify-center' : ''}`}
           >
-            <Icon size={18} className="lg:w-[20px] lg:h-[20px] flex-shrink-0" />
+            <Icon size={18} className="lg:w-[20px] lg:h-[20px] shrink-0" />
             {!collapsed && (
               <span className="truncate">{name}</span>
             )}

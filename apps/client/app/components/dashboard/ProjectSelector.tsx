@@ -56,7 +56,7 @@ export default function ProjectSelector({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative flex items-center bg-gradient-to-r from-blue-500 to-purple-600 cursor-pointer text-white p-3 sm:p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 w-full lg:w-auto min-w-[280px]"
+        className="relative flex items-center bg-linear-to-r from-blue-500 to-purple-600 cursor-pointer text-white p-3 sm:p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 w-full lg:w-auto min-w-[280px]"
       >
         <div className="flex-1 lg:mr-3 text-left">
           {selectedProject ? (
@@ -84,7 +84,7 @@ export default function ProjectSelector({
               onCreateNew();
               setIsOpen(false);
             }}
-            className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white text-sm p-4 hover:from-green-600 hover:to-blue-600 transition-all duration-300 font-medium flex items-center rounded-t-xl"
+            className="w-full bg-linear-to-r from-green-500 to-blue-500 text-white text-sm p-4 hover:from-green-600 hover:to-blue-600 transition-all duration-300 font-medium flex items-center rounded-t-xl"
           >
             <Plus className="w-4 h-4 mr-2" />
             ✨ Create New Project
@@ -116,7 +116,7 @@ export default function ProjectSelector({
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
-                          <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <Globe className="w-4 h-4 text-gray-400 shrink-0" />
                           <h3 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
                             {project.name}
                           </h3>

@@ -156,7 +156,7 @@ export default function ToolsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -314,7 +314,7 @@ export default function ToolsPage() {
                 <ul className="space-y-1">
                   {tool.features.slice(0, 3).map((feature, index) => (
                     <li key={index} className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 flex-shrink-0"></div>
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 shrink-0"></div>
                       {feature}
                     </li>
                   ))}
@@ -349,7 +349,7 @@ export default function ToolsPage() {
         )}
 
         {/* CTA Section */}
-        <div className="mt-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-center">
+        <div className="mt-16 bg-linear-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
             Need a Custom SEO Solution?
           </h2>

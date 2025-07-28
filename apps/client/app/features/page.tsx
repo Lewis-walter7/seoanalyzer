@@ -62,7 +62,7 @@ export default function FeaturesPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Hero Section */}
             <div className="text-center mb-16">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-linear-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 Powerful SEO Features
               </h1>
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
@@ -122,7 +122,7 @@ export default function FeaturesPage() {
             </div>
 
             {/* CTA Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 md:p-12 text-center text-white">
+            <div className="bg-linear-to-r from-blue-600 to-purple-600 rounded-2xl p-8 md:p-12 text-center text-white">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Boost Your SEO?</h2>
               <p className="text-xl mb-8 opacity-90">Join thousands of websites already improving their search rankings with our tools.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
