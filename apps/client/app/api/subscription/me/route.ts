@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import authOptions  from '@/lib/auth';
 import { getToken } from 'next-auth/jwt';
 
 // Backend API URL
@@ -9,7 +9,7 @@ const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:3001';
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(new authOptions());
     
     if (!session || !session.user) {
       return NextResponse.json(
