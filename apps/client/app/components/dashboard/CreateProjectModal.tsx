@@ -71,7 +71,7 @@ const handleSubmit = async (data: CreateProjectFormData) => {
         competitors: typeof data.competitors === 'string'
           ? data.competitors.split(',').map(c => c.trim()).filter(Boolean)
           : data.competitors || [],
-      });
+      }) as { project: any }
 
 
       console.log('✅ Project created successfully:', response);

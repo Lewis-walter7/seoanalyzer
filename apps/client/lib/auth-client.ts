@@ -1,5 +1,21 @@
 import { externalApi } from './api';
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  isAdmin: boolean;
+}
+
+export interface AuthResponse {
+  message: string;
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number; // in seconds
+}
+
+
 // Token storage utilities
 export const tokenStorage = {
   getAccessToken: () => {
@@ -46,7 +62,7 @@ export const authApi = {
     password: string;
   }) => {
     try {
-      const response = await externalApi.post('/auth/register', userData);
+      const response = await externalApi.post<AuthResponse>('/auth/register', userData);
       
       // Store tokens and user data
       if (response.accessToken && response.refreshToken) {
@@ -66,7 +82,7 @@ export const authApi = {
     password: string;
   }) => {
     try {
-      const response = await externalApi.post('/auth/login', credentials);
+      const response = await externalApi.post<AuthResponse>('/auth/login', credentials);
       
       // Store tokens and user data
       if (response.accessToken && response.refreshToken) {
@@ -88,7 +104,7 @@ export const authApi = {
     }
 
     try {
-      const response = await externalApi.post('/auth/refresh', { refreshToken });
+      const response = await externalApi.post<AuthResponse>('/auth/refresh', { refreshToken });
       
       // Update stored tokens
       if (response.accessToken) {

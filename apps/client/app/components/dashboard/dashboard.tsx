@@ -50,7 +50,7 @@ export default function Dashboard({ selectedProject, setSelectedProject }: Dashb
   useEffect(() => {
     async function fetchProjects() {
       try {
-        const data = await api.getProjects();
+        const data = await api.getProjects() as { projects: Project[] };
         setUserProjects(data.projects || []);
       } catch (error) {
         console.error('Error fetching projects:', error);

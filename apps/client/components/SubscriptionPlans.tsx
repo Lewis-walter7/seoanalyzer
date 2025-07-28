@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from './ui/badge';
 import { Check, Loader2, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/app/components/providers/session-provider';
 
 interface SubscriptionPlan {
   id: string;
@@ -60,7 +60,7 @@ interface SubscriptionPlansProps {
 }
 
 export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }: SubscriptionPlansProps) {
-  const { data: session } = useSession();
+  const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
@@ -79,7 +79,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
         }
 
         // Fetch current subscription if user is logged in
-        if (session?.user) {
+        if (user) {
           const subscriptionResponse = await fetch('/api/subscription/me');
           if (subscriptionResponse.ok) {
             const subscriptionData = await subscriptionResponse.json();
@@ -95,10 +95,10 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
     };
 
     fetchData();
-  }, [session]);
+  }, [user]);
 
   const handlePlanSelect = async (plan: SubscriptionPlan) => {
-    if (!session?.user) {
+    if (user) {
       toast.error('Please sign in to upgrade your plan');
       return;
     }
@@ -302,7 +302,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
               <Button
                 className="w-full"
                 onClick={() => handlePlanSelect(plan)}
-                disabled={isPlanActive(plan.id) || isPlanLoading(plan.id) || !session?.user}
+                //disabled={isPlanActive(plan.id) || isPlanLoading(plan.id) || user}
                 variant={plan.isPopular ? 'default' : 'outline'}
               >
                 {isPlanLoading(plan.id) ? (
@@ -319,7 +319,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
                 )}
               </Button>
               
-              {!session?.user && (
+              {user && (
                 <p className="text-xs text-gray-500 mt-2 text-center">
                   Sign in to upgrade
                 </p>

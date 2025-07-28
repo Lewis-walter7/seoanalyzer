@@ -6,7 +6,8 @@ import { updateUserSchema } from '@/lib/schema/userSchema';
 import { adminApiRateLimit } from '@/lib/rateLimit';
 
 // GET /api/admin/users/[id] - Get specific user
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: any) {
+  const { id } = context.params;
   try {
     // Apply rate limiting
     const rateLimitResult = adminApiRateLimit(request);
@@ -32,8 +33,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         { status: authResult.error?.includes('Forbidden') ? 403 : 401 }
       );
     }
-
-    const { id } = params;
 
     // Get user with detailed information
     const user = await prisma.user.findUnique({
@@ -131,7 +130,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PATCH /api/admin/users/[id] - Update specific user
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, context: any) {
+  const { id } = context.params;
   try {
     // Apply rate limiting
     const rateLimitResult = adminApiRateLimit(request);
@@ -157,8 +157,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         { status: authResult.error?.includes('Forbidden') ? 403 : 401 }
       );
     }
-
-    const { id } = params;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -256,7 +254,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // DELETE /api/admin/users/[id] - Delete specific user
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: any) {
+  const { id } = context.params;
   try {
     // Apply rate limiting
     const rateLimitResult = adminApiRateLimit(request);
@@ -282,8 +281,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         { status: authResult.error?.includes('Forbidden') ? 403 : 401 }
       );
     }
-
-    const { id } = params;
 
     // Prevent admin from deleting themselves
     if (id === authResult.user.id) {

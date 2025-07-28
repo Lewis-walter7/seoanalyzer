@@ -183,7 +183,7 @@ export async function PATCH(request: NextRequest) {
 
       // If email is being changed, mark as unverified
       // In a real application, you would also send a verification email
-      updateData.emailVerified = null as any;
+      //updateData.emailVerified = null as any;
     }
 
     // Update user
