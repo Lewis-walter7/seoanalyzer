@@ -141,7 +141,7 @@ export class AuthService {
     }
 
     // Find session in database
-    const session = await this.prisma.session.findUnique({
+    const session = await this.prisma.session.findFirst({
       where: {
         refreshToken,
         isRevoked: false,
@@ -175,7 +175,7 @@ export class AuthService {
 
     const newAccessTokenPayload: TokenPayload = {
       userId: session.userId,
-      email: session.user.email,
+      email: session.user.email!,
       sessionId: session.id,
       type: 'access',
     };
@@ -234,7 +234,7 @@ export class AuthService {
     }
 
     // Find session in database
-    const session = await this.prisma.session.findUnique({
+    const session = await this.prisma.session.findFirst({
       where: {
         accessToken,
         isRevoked: false,
@@ -421,14 +421,14 @@ export class AuthService {
     // Generate JWT tokens with sessionId
     const accessTokenPayload: TokenPayload = {
       userId: user.id,
-      email: user.email,
+      email: user.email!,
       sessionId: session.id,
       type: 'access',
     };
 
     const refreshTokenPayload: TokenPayload = {
       userId: user.id,
-      email: user.email,
+      email: user.email!,
       sessionId: session.id,
       type: 'refresh',
     };

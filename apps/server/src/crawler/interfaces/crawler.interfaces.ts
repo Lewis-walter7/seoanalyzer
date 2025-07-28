@@ -76,6 +76,12 @@ export interface CrawlProgress {
   estimatedTimeRemaining?: number;
 }
 
+export interface CrawlStats {
+  avgLoadTime: number;
+  successRate: number;
+  crawlDuration: number;
+}
+
 export interface CrawlResult {
   jobId: string;
   pages: CrawledPage[];
@@ -85,6 +91,7 @@ export interface CrawlResult {
   startTime: Date;
   endTime?: Date;
   totalDuration?: number;
+  stats?: CrawlStats;
 }
 
 export interface RobotsTxtRule {

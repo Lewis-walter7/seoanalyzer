@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import IntaSend from 'intasend-node';
+import * as crypto from 'crypto'; 
 
 export interface PaymentLinkPayload {
   amount: number;
@@ -65,7 +66,7 @@ export interface TransactionVerificationResponse {
 @Injectable()
 export class IntaSendService {
   private readonly logger = new Logger(IntaSendService.name);
-  private readonly intasend: IntaSend;
+  private readonly intasend!: IntaSend;
   private readonly isTestMode: boolean;
 
   constructor() {
@@ -99,7 +100,7 @@ export class IntaSendService {
       this.logger.log(`Creating payment link for amount: ${payload.amount} ${payload.currency}`);
       
       const collection = this.intasend.collection();
-      const response = await collection.create({
+      const response = await collection.charge({
         amount: payload.amount,
         currency: payload.currency,
         email: payload.email,
@@ -116,7 +117,7 @@ export class IntaSendService {
       return response;
     } catch (error) {
       this.logger.error('Failed to create payment link', error);
-      throw new Error(`Failed to create payment link: ${error.message}`);
+      throw new Error(`Failed to create payment link: ${(error as Error).message}`);
     }
   }
 
@@ -131,28 +132,34 @@ export class IntaSendService {
       this.logger.warn('IntaSend client not initialized, skipping signature verification');
       return true;
     }
-    
+
     try {
       const webhookSecret = process.env.INTASEND_WEBHOOK_SECRET;
-      
+
       if (!webhookSecret) {
         this.logger.warn('INTASEND_WEBHOOK_SECRET not configured, skipping signature verification');
         return true; // Allow through if webhook secret is not configured
       }
 
-      // Convert buffer to string if necessary
       const bodyString = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8');
-      
-      // Use IntaSend's built-in signature verification
-      const isValid = this.intasend.collection().verify_signature(bodyString, signature, webhookSecret);
-      
+
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(bodyString)
+        .digest('base64');
+
+      const isValid = crypto.timingSafeEqual(
+        Buffer.from(expectedSignature),
+        Buffer.from(signature)
+      );
+
       if (!isValid) {
         this.logger.warn('Invalid webhook signature detected');
       }
-      
+
       return isValid;
     } catch (error) {
-      this.logger.error('Error verifying webhook signature', error);
+      this.logger.error('Error verifying webhook signature:', error);
       return false;
     }
   }
@@ -177,7 +184,7 @@ export class IntaSendService {
       return response;
     } catch (error) {
       this.logger.error(`Failed to verify transaction ${txnId}`, error);
-      throw new Error(`Failed to verify transaction: ${error.message}`);
+      throw new Error(`Failed to verify transaction: ${(error as Error).message}`);
     }
   }
 
@@ -211,7 +218,7 @@ export class IntaSendService {
       // Simple test to verify the client is properly configured
       const collection = this.intasend.collection();
       // This will throw an error if credentials are invalid
-      await collection.create({
+      await collection.charge({
         amount: 1,
         currency: 'KES',
         email: 'test@example.com',

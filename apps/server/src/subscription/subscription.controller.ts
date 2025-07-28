@@ -23,6 +23,7 @@ import { Public } from '../auth/public.decorator';
 import { RequireAdmin } from '../auth/admin.decorator';
 import { User } from '../auth/user.decorator';
 import type { AuthenticatedUser } from '../auth/user.interface';
+// import { User } from '../../apps/server/src/modules/auth';
 
 @Controller('v1/subscription')
 export class SubscriptionController {
@@ -55,13 +56,32 @@ export class SubscriptionController {
     @User() user: AuthenticatedUser,
   ) {
     try {
+      
       const { planId, billingCycle } = paymentInitiateDto;
       this.logger.log(`Initiating payment for user ${user.id}, plan ${planId}, cycle ${billingCycle}`);
       
       const plan = await this.subscriptionService.getPlanById(planId);
+      const fullUser = await this.subscriptionService.getUserById(user.id);
+
+      if (!fullUser.email) {
+        this.logger.error(`User ${user.id} does not have a valid email address`);
+        throw new Error('A valid email address is required to initiate payment.');
+      }
+      const safeUser = {
+        ...fullUser,
+        email: fullUser.email!,
+        password: fullUser.password ?? undefined, 
+        name: fullUser.name ?? 'User',
+      };
+
+      const safePlan = {
+        ...plan,
+        priceYearly: plan.priceYearly ?? undefined,
+      };
+
       const paymentUrl = await this.paymentService.initiatePayment(
-        user,
-        plan,
+        safeUser,
+        safePlan,
         billingCycle,
       );
       
@@ -85,6 +105,7 @@ export class SubscriptionController {
       const signature = req.headers['x-intasend-signature'] as string;
       
       await this.paymentService.handleWebhook({
+        provider: 'intasend',
         rawBody: req.body || JSON.stringify(webhookDto),
         signature,
         ...webhookDto,

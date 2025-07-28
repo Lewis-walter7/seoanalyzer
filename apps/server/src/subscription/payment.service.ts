@@ -2,9 +2,20 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IntaSendService } from './intasend.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentLinkPayload, PaymentLinkResponse } from './intasend.service';
+import { User } from '../../apps/server/src/modules/auth';
+import { Plan } from '../../apps/server/src/modules/auth/auth.service';
 
 // Import TransactionStatus from generated Prisma client
 type TransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
+export type BillingCycle = 'MONTHLY' | 'YEARLY';
+interface IntaSendCollectionWebhook {
+  invoice_id: string;
+  state: string;
+  provider: string;
+  api_ref: string;
+  challenge?: string;
+  [key: string]: any;
+}
 
 @Injectable()
 export class PaymentService {
@@ -15,7 +26,7 @@ export class PaymentService {
     private readonly prisma: PrismaService
   ) {}
 
-  async initiatePayment(user, plan, billingCycle): Promise<string> {
+  async initiatePayment(user: User, plan:Plan, billingCycle: BillingCycle): Promise<string> {
     this.logger.log('Initiating payment...');
     try {
       // Determine price based on billing cycle
@@ -53,7 +64,7 @@ export class PaymentService {
     }
   }
 
-  async handleWebhook(payload) {
+  async handleWebhook(payload: IntaSendCollectionWebhook) {
     this.logger.log('Handling webhook...');
     try {
       const isValid = this.intasendService.verifyWebhookSignature(payload.rawBody, payload.signature);

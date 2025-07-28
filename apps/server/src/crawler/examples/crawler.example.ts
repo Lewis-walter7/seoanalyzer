@@ -1,5 +1,5 @@
 import { CrawlerService } from "../crawler.service";
-import { CrawlJob } from '../interfaces/crawler.interfaces';
+import { CrawlJob, CrawlResult } from '../interfaces/crawler.interfaces';
 
 /**
  * Example usage of the CrawlerService
@@ -11,7 +11,7 @@ export class CrawlerExample {
   /**
    * Basic website crawl example
    */
-  async basicCrawlExample(): Promise<string> {
+  async basicCrawlExample(): Promise<CrawlResult> {
     const crawlJob: CrawlJob = {
       id: 'example-basic-crawl',
       urls: ['https://ontime.co.ke'],
@@ -49,7 +49,7 @@ export class CrawlerExample {
   /**
    * Advanced crawl with custom configuration
    */
-  async advancedCrawlExample(): Promise<string> {
+  async advancedCrawlExample(): Promise<CrawlResult> {
     const crawlJob: CrawlJob = {
       id: 'example-advanced-crawl',
       urls: ['https://docs.example.com'],
@@ -89,7 +89,7 @@ export class CrawlerExample {
   /**
    * E-commerce site crawl example (respecting robots.txt and rate limits)
    */
-  async ecommerceCrawlExample(): Promise<string> {
+  async ecommerceCrawlExample(): Promise<CrawlResult> {
     const crawlJob: CrawlJob = {
       id: 'example-ecommerce-crawl',
       urls: ['https://shop.example.com'],
@@ -124,7 +124,7 @@ export class CrawlerExample {
   /**
    * News site crawl example (JavaScript disabled for faster crawling)
    */
-  async newsSiteCrawlExample(): Promise<string> {
+  async newsSiteCrawlExample(): Promise<CrawlResult> {
     const crawlJob: CrawlJob = {
       id: 'example-news-crawl',
       urls: ['https://news.example.com'],
@@ -203,7 +203,7 @@ export class CrawlerExample {
   /**
    * Example of crawling multiple sites simultaneously
    */
-  async multipleSitesCrawlExample(): Promise<string[]> {
+  async multipleSitesCrawlExample(): Promise<CrawlResult[]> {
     const sites = [
       'https://example1.com',
       'https://example2.com',

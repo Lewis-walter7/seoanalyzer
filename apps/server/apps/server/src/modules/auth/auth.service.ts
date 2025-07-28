@@ -12,6 +12,13 @@ export interface User {
   createdAt: Date;
 }
 
+export interface Plan {
+  id: string;
+  displayName: string;
+  priceMonthly: number;
+  priceYearly?: number;
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;

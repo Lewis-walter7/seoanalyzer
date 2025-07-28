@@ -1,5 +1,3 @@
-// src/crawler/dto/create-crawl-job.dto.ts
-
 import {
   IsArray,
   IsBoolean,

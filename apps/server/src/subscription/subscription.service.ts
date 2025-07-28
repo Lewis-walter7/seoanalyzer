@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubscriptionPlanDto, SubscriptionUsageDto } from './dto/subscription.dto';
-import { SubscriptionStatus } from '@prisma/client';
+import { SubscriptionStatus, User } from '@prisma/client';
 
 export interface PlanLimits {
   maxProjects: number;
@@ -58,6 +58,17 @@ export class SubscriptionService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+   async getUserById(userId: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    return user;
+  }
   // ========================
   // PLAN CRUD OPERATIONS (Admin Only)
   // ========================

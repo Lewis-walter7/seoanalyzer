@@ -112,9 +112,11 @@ export class CrawlerPlaywrightService extends EventEmitter {
 
     try {
       let processedCount = 0;
+      const urlQueue = crawlState.urlQueue as Set<string>;
 
       while (crawlState.urlQueue.size > 0 && processedCount < job.maxPages) {
-        const urlsToProcess = Array.from(crawlState.urlQueue).slice(0, Math.min(5, job.maxPages - processedCount));
+        const urlQueue = crawlState.urlQueue as Set<string>;
+        const urlsToProcess = Array.from(urlQueue).slice(0, Math.min(5, job.maxPages - processedCount));
         crawlState.urlQueue.clear();
 
         await Promise.allSettled(
@@ -175,8 +177,11 @@ export class CrawlerPlaywrightService extends EventEmitter {
       await this.respectCrawlDelay(url, domainDelays, lastCrawlTime, job.crawlDelay);
 
       page = await browser.newPage();
-      await page.setUserAgent(job.userAgent || this.defaultOptions.defaultUserAgent);
+      await page.setExtraHTTPHeaders({
+        'User-Agent': job.userAgent || this.defaultOptions.defaultUserAgent
+      });
 
+      const startTime = Date.now();
       const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: job.timeout || this.defaultOptions.defaultTimeout });
 
       if (!response) {
@@ -185,14 +190,15 @@ export class CrawlerPlaywrightService extends EventEmitter {
 
       const html = await page.content();
       const title = await page.title();
+      const loadTime = Date.now() - startTime;
       
       const crawledPage: CrawledPage = {
         url,
         title,
         statusCode: response.status(),
-        contentType: response.headers()['content-type'],
+        contentType: response.headers()['content-type'] || 'text/html',
         size: html.length,
-        loadTime: response.timing().responseEnd - response.timing().requestStart,
+        loadTime,
         depth: crawlState.currentDepth,
         links: [],
         assets: {
@@ -201,7 +207,14 @@ export class CrawlerPlaywrightService extends EventEmitter {
           stylesheets: [],
         },
         meta: {},
-        headings: {},
+        headings: {
+          h1: [],
+          h2: [],
+          h3: [],
+          h4: [],
+          h5: [],
+          h6: []
+        },
         timestamp: new Date(),
       };
 
@@ -251,7 +264,110 @@ export class CrawlerPlaywrightService extends EventEmitter {
     }
   }
 
-  // The validateCrawlJob, generateCrawlResult, emitProgress, addDiscoveredUrls methods remain unchanged from the existing service.
+  private validateCrawlJob(job: CrawlJob): void {
+    if (!job.urls || job.urls.length === 0) {
+      throw new Error('No URLs provided for crawling');
+    }
+
+    if (job.maxPages && job.maxPages <= 0) {
+      throw new Error('maxPages must be greater than 0');
+    }
+
+    if (job.maxDepth && job.maxDepth < 0) {
+      throw new Error('maxDepth must be non-negative');
+    }
+
+    // Validate URLs
+    for (const url of job.urls) {
+      if (!isValidUrl(url)) {
+        throw new Error(`Invalid URL: ${url}`);
+      }
+    }
+  }
+
+  private generateCrawlResult(crawlState: any, completed: boolean): CrawlResult {
+    const { jobId, job, startTime, crawledPages, errors, progress } = crawlState;
+    
+    return {
+      jobId,
+      startTime,
+      endTime: new Date(),
+      completed,
+      progress,
+      pages: Array.from(crawledPages.values()),
+      errors,
+      stats: {
+        avgLoadTime: this.calculateAverageLoadTime(crawledPages),
+        successRate: crawledPages.size / (crawledPages.size + errors.length),
+        crawlDuration: Date.now() - startTime.getTime(),
+      },
+    };
+  }
+
+  private calculateAverageLoadTime(crawledPages: Map<string, CrawledPage>): number {
+    if (crawledPages.size === 0) return 0;
+    
+    const totalLoadTime = Array.from(crawledPages.values())
+      .reduce((sum, page) => sum + page.loadTime, 0);
+    
+    return totalLoadTime / crawledPages.size;
+  }
+
+  private emitProgress(crawlState: any): void {
+    const { crawledPages, errors, urlQueue, currentDepth, startTime } = crawlState;
+
+    const progress: CrawlProgress = {
+      totalUrls: Math.min(
+        crawlState.job.maxPages,
+        crawledPages.size + urlQueue.size + errors.length
+      ),
+      processedUrls: crawledPages.size,
+      pendingUrls: urlQueue.size,
+      errorUrls: errors.length,
+      currentDepth,
+      startTime, 
+    };
+
+    this.emit('crawl-progress', progress);
+  }
+
+
+  private addDiscoveredUrls(links: string[], baseUrl: string, crawlState: any): void {
+    const { job, urlQueue, processedUrls } = crawlState;
+    
+    for (const link of links) {
+      try {
+        const resolvedUrl = resolveUrl(link, baseUrl);
+        const normalizedUrl = normalizeUrl(resolvedUrl);
+        
+        if (!isValidUrl(normalizedUrl)) continue;
+        if (processedUrls.has(normalizedUrl)) continue;
+        if (urlQueue.has(normalizedUrl)) continue;
+        
+        // Check depth limit
+        const depth = getUrlDepth(normalizedUrl, job.urls[0]);
+        if (depth > job.maxDepth) continue;
+        
+        // Check domain restrictions
+        if (job.allowedDomains && job.allowedDomains.length > 0) {
+          if (!isAllowedDomain(normalizedUrl, job.allowedDomains)) continue;
+        }
+        
+        // Check include/exclude patterns
+        if (job.includePatterns && job.includePatterns.length > 0) {
+          if (!matchesPatterns(normalizedUrl, job.includePatterns)) continue;
+        }
+        
+        if (job.excludePatterns && job.excludePatterns.length > 0) {
+          if (matchesPatterns(normalizedUrl, job.excludePatterns)) continue;
+        }
+        
+        urlQueue.add(normalizedUrl);
+      } catch (error) {
+        this.logger.debug(`Failed to process discovered URL: ${link}`, error);
+      }
+    }
+  }
 
   private async cleanup(): Promise<void> {
     this.robotsUtil.clearCache();
