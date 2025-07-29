@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IntaSendService } from './intasend.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentLinkPayload, PaymentLinkResponse } from './intasend.service';
-import { User } from '../../apps/server/src/modules/auth';
-import { Plan } from '../../apps/server/src/modules/auth/auth.service';
+import { User } from '../apps/src/auth';
+import { Plan } from '../apps/src/auth/auth.service';
 
 // Import TransactionStatus from generated Prisma client
 type TransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
