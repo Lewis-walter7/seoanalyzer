@@ -15,6 +15,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "types": [
+      "jest",
       "node"
     ],
     "experimentalDecorators": true,
