@@ -1,26 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CreateProjectModal from './CreateProjectModal';
 import ProjectSelector from './ProjectSelector';
-import { api, Project } from '@/lib/api';
+import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/app/components/providers/session-provider';
+import toast from 'react-hot-toast';
+import SeoAnalytics from '@/features/SeoAnalytics';
 
-
-interface DashboardProps {
-  selectedProject: any;
-  setSelectedProject: (project: any) => void;
-}
-
-export default function Dashboard({ selectedProject, setSelectedProject }: DashboardProps) {
+export default function Dashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'projects' | 'tools'>('projects');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [userProjects, setUserProjects] = useState<any[]>([]);
   const { user } = useAuth();
+  
+  const {
+    projects: userProjects,
+    selectedProject,
+    loading,
+    error,
+    selectProject,
+    createProject,
+    deleteProject,
+    refreshProjects
+  } = useProjects();
 
-  console.log('User:', user);
+
 
   const handleTabClick = (tab: 'projects' | 'tools') => {
     if (tab === 'tools') {
@@ -30,35 +36,62 @@ export default function Dashboard({ selectedProject, setSelectedProject }: Dashb
     }
   };
 
-  const handleProjectCreated = (newProject: any) => {
-    setUserProjects(prev => [...prev, newProject]);
-    setSelectedProject(newProject);
-  };
-
-  const handleProjectSelect = (project: any) => {
-    setSelectedProject(project);
-  };
-
-  const handleDeleteProject = (projectId: number) => {
-    setUserProjects(prev => prev.filter(p => p.id !== projectId));
-    if (selectedProject?.id === projectId) {
-      setSelectedProject(null);
+  const handleProjectCreated = async (projectData: any) => {
+    const result = await createProject(projectData);
+    if (result.success) {
+      toast.success('Project created successfully!');
+      setShowCreateModal(false);
+    } else {
+      toast.error(result.error || 'Failed to create project');
     }
   };
 
-  // Fetch projects from API on component mount
-  useEffect(() => {
-    async function fetchProjects() {
-      try {
-        const data = await api.getProjects() as { projects: Project[] };
-        setUserProjects(data.projects || []);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      }
-    }
+  const handleProjectSelect = (project: Project) => {
+    selectProject(project);
+  };
 
-    fetchProjects();
-  }, []);
+  const handleDeleteProject = async (projectId: string) => {
+    const result = await deleteProject(projectId);
+    if (result.success) {
+      toast.success('Project deleted successfully');
+    } else {
+      toast.error(result.error || 'Failed to delete project');
+    }
+  };
+
+  // Show loading state
+  if (loading && userProjects.length === 0) {
+    return (
+      <div className="min-h-full bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="container mx-auto p-4 sm:p-6 min-h-full">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading projects...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-full bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="container mx-auto p-4 sm:p-6 min-h-full">
+          <div className="flex flex-col justify-center items-center h-64">
+            <div className="text-red-500 text-lg mb-4">⚠️ Error loading projects</div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+            <button
+              onClick={() => refreshProjects()}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -80,7 +113,10 @@ export default function Dashboard({ selectedProject, setSelectedProject }: Dashb
           />
         </div>
 
-        {/* Tabs */}
+          {/* SEO Analytics Integration */}
+          <SeoAnalytics />
+
+          {/* Tabs */}
         <div className="flex space-x-1 sm:space-x-2 mb-6 lg:mb-8 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-lg">
           <button
             className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base ${
@@ -198,12 +234,14 @@ export default function Dashboard({ selectedProject, setSelectedProject }: Dashb
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Project Selected</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">Select a project from the dropdown above to view its details and analytics.</p>
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="bg-linear-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-600 hover:to-blue-600 transition-all duration-300"
-                  >
-                    ✨ Create Your First Project
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="bg-linear-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-600 hover:to-blue-600 transition-all duration-300 w-full"
+                    >
+                      ✨ Create Your First Project
+                    </button>
+                  </div>
                 </div>
               </div>
             )}            

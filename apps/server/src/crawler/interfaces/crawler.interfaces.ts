@@ -30,6 +30,7 @@ export interface CrawledPage {
   loadTime: number;
   depth: number;
   parentUrl?: string;
+  html?: string; // Add HTML content for SEO analysis
   links: string[];
   assets: {
     images: string[];

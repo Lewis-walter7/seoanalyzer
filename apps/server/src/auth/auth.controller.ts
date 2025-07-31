@@ -11,8 +11,8 @@ import {
   BadRequestException,
   Param,
 } from '@nestjs/common';
-import { AuthService } from './auth.service.ts';
-import type { LoginCredentials, RegisterCredentials } from './auth.service.ts';
+import { AuthService } from './auth.service';
+import type { LoginCredentials, RegisterCredentials } from './auth.service';
 import { AuthGuard } from './auth.guard';
 import { Public } from './public.decorator';
 import { User } from './user.decorator';

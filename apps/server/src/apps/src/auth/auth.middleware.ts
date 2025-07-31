@@ -92,14 +92,15 @@ export function authenticateJWT(req: Request, res: Response, next: NextFunction)
         next();
       })
       .catch((error) => {
-        console.error('Error fetching user:', error);
+        // Log error for debugging but with structured logging
+        console.error('[AuthMiddleware] User fetch error:', error.message);
         res.status(500).json({
           error: 'Internal server error',
           message: 'Failed to authenticate user',
         });
       });
   } catch (error) {
-    console.error('JWT verification error:', error);
+    console.error('[AuthMiddleware] Token verification error:', (error as Error).message);
     res.status(401).json({
       error: 'Access denied',
       message: 'Invalid token',
@@ -138,12 +139,12 @@ export function optionalAuthenticateJWT(req: Request, res: Response, next: NextF
         next();
       })
       .catch((error) => {
-        console.error('Error fetching user:', error);
+        console.debug('[AuthMiddleware] Optional auth - user fetch error:', (error as Error).message);
         // Continue without user on error
         next();
       });
   } catch (error) {
-    console.error('JWT verification error:', error);
+    console.debug('[AuthMiddleware] Optional auth - token verification error:', (error as Error).message);
     // Continue without user on error
     next();
   }
@@ -192,7 +193,7 @@ export async function fastifyAuthenticateJWT(
     request.user = user;
     request.token = token;
   } catch (error) {
-    console.error('JWT verification error:', error);
+    console.error('[AuthMiddleware] Fastify token verification error:', (error as Error).message);
     reply.status(401).send({
       error: 'Access denied',
       message: 'Invalid token',
@@ -229,7 +230,7 @@ export async function fastifyOptionalAuthenticateJWT(
       request.token = token;
     }
   } catch (error) {
-    console.error('JWT verification error:', error);
+    console.debug('[AuthMiddleware] Fastify optional auth - token verification error:', (error as Error).message);
     // Continue without user on error
   }
 }

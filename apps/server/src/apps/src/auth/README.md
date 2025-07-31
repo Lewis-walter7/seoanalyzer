@@ -168,7 +168,7 @@ You need to implement these methods with your chosen database solution (e.g., Po
 ## Security Features
 
 - Passwords are hashed with bcrypt using 12 rounds
-- JWT tokens expire after 24 hours
+- JWT tokens expire after 7 days
 - Sensitive user data (passwords) are excluded from API responses
 - Proper error handling for authentication failures
 

@@ -1,0 +1,69 @@
+
+> seo-analyzer-server@1.0.0 start
+> ts-node -r tsconfig-paths/register src/main.ts
+
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[33m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [33m   WARN[39m [38;5;3m[IntaSendService] [39m[33mIntaSend keys not configured. Payment functionality will be disabled.[39m
+[33m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [33m   WARN[39m [38;5;3m[IntaSendService] [39m[33mTo enable payments, set INTASEND_PUBLISHABLE_KEY and INTASEND_SECRET_KEY environment variables.[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDiscoveryModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEventEmitterModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCrawlerModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSubscriptionModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mProjectsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +10ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/register, POST} route[39m[38;5;3m +5ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/refresh, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/logout, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/logout-all, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/sessions, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/sessions/:sessionId, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/validate, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCrawlerController {/api/crawler}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/crawler/jobs, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/crawler/stats, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/crawler/options, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/crawler/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSubscriptionController {/v1/subscription}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/subscription/plans, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/subscription/pay/initiate, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/subscription/intasend/webhook, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/subscription/me, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/subscription/usage, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/subscription/admin/stats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mProjectsController {/v1/projects}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/projects, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/projects, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/projects/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/projects/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/projects/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/projects/:id/analyze, POST} route[39m[38;5;3m +0ms[39m
+📊 Connected to MongoDB via Prisma
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[CrawlerPlaywrightService] [39m[32m🚀 Playwright Crawler initialized[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[CrawlerService] [39m[32m🚀 Fallback Crawler initialized (using fetch instead of Playwright)[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[CrawlerOrchestratorService] [39m[32mCrawler event listeners registered successfully[39m
+[32m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +7ms[39m
+[31m[Nest] 304790  - [39m07/31/2025, 12:20:13 AM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use :::3001[39m[38;5;3m +4ms[39m
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at ExpressAdapter.listen (/home/lewis/Desktop/seoanalyzer/apps/server/node_modules/@nestjs/platform-express/adapters/express-adapter.js:95:32)
+    at /home/lewis/Desktop/seoanalyzer/apps/server/node_modules/@nestjs/core/nest-application.js:183:30
+    at new Promise (<anonymous>)
+    at NestApplication.listen (/home/lewis/Desktop/seoanalyzer/apps/server/node_modules/@nestjs/core/nest-application.js:173:16)
+    at async bootstrap (/home/lewis/Desktop/seoanalyzer/apps/server/src/main.ts:29:3) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}

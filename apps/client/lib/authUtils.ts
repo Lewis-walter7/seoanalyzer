@@ -36,7 +36,7 @@ export async function getAuthenticatedUser(req?: NextRequest): Promise<AuthResul
       }
     };
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.debug('Authentication error:', error);
     return {
       success: false,
       error: 'Authentication failed'
@@ -110,7 +110,7 @@ export async function verifyToken(token: string, email: string, type: 'email_ver
 
     return true;
   } catch (error) {
-    console.error('Token verification error:', error);
+    console.debug('Token verification error:', error);
     return false;
   }
 }

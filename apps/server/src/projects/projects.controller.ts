@@ -62,5 +62,11 @@ export class ProjectsController {
   async deleteProject(@User() user: AuthenticatedUser, @Param('id') projectId: string) {
     await this.projectService.deleteProject(user.id, projectId);
   }
+
+  @UseGuards(AuthGuard)
+  @Post(':id/analyze')
+  async analyzeProject(@User() user: AuthenticatedUser, @Param('id') projectId: string) {
+    return this.projectService.analyzeProject(user.id, projectId);
+  }
 }
 

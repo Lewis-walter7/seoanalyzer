@@ -23,7 +23,7 @@ type CreateProjectFormData = z.infer<typeof createProjectSchema>;
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProjectCreated: (project: any) => void;
+  onProjectCreated: (projectData: CreateProjectFormData) => Promise<void>;
 }
 
 export default function CreateProjectModal({ isOpen, onClose, onProjectCreated }: CreateProjectModalProps) {
@@ -42,10 +42,8 @@ export default function CreateProjectModal({ isOpen, onClose, onProjectCreated }
       competitors: '',
     },
   });
-const handleSubmit = async (data: CreateProjectFormData) => {
-    console.log('🚀 Form submitted with data:', data);
-    console.log('🔐 Auth status:', isAuthenticated);
-    console.log('📝 Form errors:', form.formState.errors);
+
+  const handleSubmit = async (data: CreateProjectFormData) => {
     
     if (!isAuthenticated) {
       toast.error('You must be logged in to create a project.');
@@ -54,16 +52,14 @@ const handleSubmit = async (data: CreateProjectFormData) => {
     }
 
     if (isSubmitting) {
-      console.log('⚠️ Already submitting, skipping...');
       return;
     }
     
     setIsSubmitting(true);
     try {
-      console.log('🌐 Creating project with API...');
-      const response = await api.createBackendProject({
+      const projectData = {
         name: data.name,
-        domain: new URL(data.url).hostname,
+        url: data.url,
         description: data.description || undefined,
         targetKeywords: typeof data.targetKeywords === 'string'
           ? data.targetKeywords.split(',').map(k => k.trim()).filter(Boolean)
@@ -71,18 +67,17 @@ const handleSubmit = async (data: CreateProjectFormData) => {
         competitors: typeof data.competitors === 'string'
           ? data.competitors.split(',').map(c => c.trim()).filter(Boolean)
           : data.competitors || [],
-      }) as { project: any }
+      };
 
-
-      console.log('✅ Project created successfully:', response);
-      onProjectCreated(response.project);
-      toast.success('Project created successfully!');
+      await onProjectCreated(projectData);
+      
+      // Reset form and close modal on success
       form.reset();
       setCurrentStep(1);
       onClose();
     } catch (error) {
       console.error('❌ Error creating project:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create project. Please try again.');
+      // Error handling is now done in the parent component
     } finally {
       setIsSubmitting(false);
     }
@@ -307,12 +302,6 @@ const nextStep = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                onClick={() => {
-                  console.log('🔘 Create Project button clicked');
-                  console.log('📝 Form valid:', form.formState.isValid);
-                  console.log('🎯 Current form values:', form.getValues());
-                  console.log('❌ Form errors:', form.formState.errors);
-                }}
                 className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Creating...' : 'Create Project'}

@@ -27,7 +27,13 @@ async function bootstrap() {
   
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`🚀 SEO Analyzer API running on http://localhost:${port}`);
+  
+  // Use proper structured logging for application startup
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`🚀 SEO Analyzer API running on http://localhost:${port}`);
+  } else {
+    console.info(`SEO Analyzer API started on port ${port}`);
+  }
 }
 
 bootstrap();

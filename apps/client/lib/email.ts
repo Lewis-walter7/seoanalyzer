@@ -30,8 +30,11 @@ export async function sendEmail({
       text: text.trim(),
     });
 
-    console.log("Email sent (dev mode):", info.messageId);
-    console.log("Preview URL: http://localhost:1080"); // MailDev web interface
+    // Log only in development environment
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Email sent (dev mode):", info.messageId);
+      console.log("Preview URL: http://localhost:1080"); // MailDev web interface
+    }
 
     return {
       success: true,

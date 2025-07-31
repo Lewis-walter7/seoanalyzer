@@ -79,6 +79,9 @@ export class CrawlerPlaywrightService extends EventEmitter {
 
     this.activeCrawls.set(jobId, crawlState);
 
+    // Emit crawl-started event immediately
+    this.emit('crawl-started', jobId);
+
     const browser = await chromium.launch({ headless: true });
     await this.executeCrawl(browser, crawlState).catch(error => {
       this.logger.error(`Crawl job ${jobId} failed:`, error);
@@ -89,8 +92,6 @@ export class CrawlerPlaywrightService extends EventEmitter {
         depth: 0,
       });
     });
-
-    this.emit('crawl-started', jobId);
     return new Promise<CrawlResult>((resolve, reject) => {
       this.once('crawl-finished', (result: CrawlResult) => {
         if (result.jobId === jobId) {
@@ -200,6 +201,7 @@ export class CrawlerPlaywrightService extends EventEmitter {
         size: html.length,
         loadTime,
         depth: crawlState.currentDepth,
+        html, // Include HTML content for SEO analysis
         links: [],
         assets: {
           images: [],

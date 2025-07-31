@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     return res;
   } catch (error: any) {
-    console.error('Login error:', error);
+    console.error('[Auth API] Login error:', error.response?.data?.message || error.message);
 
     if (error.response?.status === 401) {
       return NextResponse.json(

@@ -142,7 +142,7 @@ export class AuthService {
         });
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      console.debug('Logout error:', error);
     } finally {
       clearAuthTokens();
     }

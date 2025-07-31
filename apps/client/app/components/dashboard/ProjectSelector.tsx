@@ -4,16 +4,17 @@ import { useState } from 'react';
 import { ChevronDown, Plus, Globe, Calendar, BarChart3, Settings, Trash2 } from 'lucide-react';
 
 interface Project {
-  id: number;
+  id: string;
   name: string;
   url: string;
-  onPageScore: string;
-  problems: string;
-  backlinks: string;
+  domain?: string;
+  onPageScore?: string;
+  problems?: string;
+  backlinks?: string;
   crawlStatus: string;
-  lastCrawl: string;
-  pages: string;
-  createdAt?: string;
+  lastCrawl?: string;
+  pages?: string;
+  createdAt?: Date;
 }
 
 interface ProjectSelectorProps {
@@ -21,7 +22,7 @@ interface ProjectSelectorProps {
   selectedProject: Project | null;
   onProjectSelect: (project: Project) => void;
   onCreateNew: () => void;
-  onDeleteProject?: (projectId: number) => void;
+  onDeleteProject?: (projectId: string) => void;
 }
 
 export default function ProjectSelector({ 
@@ -146,8 +147,8 @@ export default function ProjectSelector({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Handle project settings
-                            console.log('Settings for project:', project.id);
+                            // TODO: Handle project settings
+                            // Navigate to project settings page
                           }}
                           className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
                           title="Project Settings"

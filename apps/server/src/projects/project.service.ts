@@ -1,11 +1,17 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubscriptionService, UsageType } from '../subscription/subscription.service';
+import { ProjectCreatedEvent } from './events/project-created.event';
+import { CrawlerService } from '../crawler/crawler.service';
+import { SeoAnalyzer } from '../crawler/utils/seo-analyzer.util';
 
 export interface CreateProjectDto {
   name: string;
   url: string;
   description?: string;
+  targetKeywords?: string[];
+  competitors?: string[];
 }
 
 export interface UpdateProjectDto {
@@ -35,6 +41,7 @@ export class ProjectService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -140,6 +147,7 @@ export class ProjectService {
     const project = await this.prisma.project.create({
       data: {
         name,
+        url,
         domain,
         description,
         userId,
@@ -152,6 +160,15 @@ export class ProjectService {
         },
       },
     });
+
+    // Emit project.created domain event
+    const projectCreatedEvent = new ProjectCreatedEvent(
+      project.id,
+      project.url,
+      userId,
+      project.name,
+    );
+    this.eventEmitter.emit('project.created', projectCreatedEvent);
 
     return this.formatProjectResponse(project);
   }
@@ -232,6 +249,70 @@ export class ProjectService {
   }
 
   /**
+   * Analyze a project by crawling and performing SEO analysis
+   */
+  async analyzeProject(userId: string, projectId: string): Promise<{ message: string; status: string; crawlJobId?: string }> {
+    // Check if project exists and belongs to user
+    const project = await this.prisma.project.findFirst({
+      where: {
+        id: projectId,
+        userId,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Check for existing running crawl jobs
+    const existingCrawlJob = await this.prisma.crawlJob.findFirst({
+      where: {
+        projectId,
+        status: { in: ['QUEUED', 'RUNNING'] },
+      },
+    });
+
+    if (existingCrawlJob) {
+      return {
+        message: 'Analysis is already in progress for this project',
+        status: 'already_running',
+        crawlJobId: existingCrawlJob.id,
+      };
+    }
+
+    // Record usage for analysis
+    await this.recordUsage(userId, UsageType.ANALYSIS_RUN);
+
+    // Create a new crawl job
+    const crawlJob = await this.prisma.crawlJob.create({
+      data: {
+        projectId,
+        status: 'QUEUED',
+        maxPages: 100,
+        maxDepth: 3,
+        userAgent: 'SEO-Analyzer-Bot/1.0 (+https://seo-analyzer.com/bot)',
+      },
+    });
+
+    // Trigger the analysis by emitting a project analysis event
+    const analysisEvent = {
+      projectId: project.id,
+      rootUrl: project.url,
+      userId,
+      projectName: project.name,
+      crawlJobId: crawlJob.id,
+    };
+    
+    this.eventEmitter.emit('project.analysis.requested', analysisEvent);
+
+    return {
+      message: 'Analysis started successfully',
+      status: 'started',
+      crawlJobId: crawlJob.id,
+    };
+  }
+
+  /**
    * Record usage for project operations
    */
   async recordUsage(userId: string, usageType: UsageType): Promise<void> {
@@ -254,21 +335,21 @@ export class ProjectService {
    * Format project for API response
    */
   private formatProjectResponse(project: any): ProjectResponse {
-    const lastCrawlResult = project.crawlResults?.[0];
-    const crawlCount = project._count?.crawlResults || 0;
+    const lastCrawlJob = project.crawlJobs?.[0];
+    const crawlCount = project._count?.crawlJobs || 0;
 
     return {
       id: project.id,
       name: project.name,
-      url: project.url,
+      url: project.url || `https://${project.domain}`,
       domain: project.domain,
       description: project.description,
-      onPageScore: lastCrawlResult?.onPageScore ? `${lastCrawlResult.onPageScore}%` : '0%',
-      problems: lastCrawlResult?.problemsCount?.toString() || '0',
-      backlinks: lastCrawlResult?.backlinksCount?.toString() || '0',
-      crawlStatus: lastCrawlResult ? 'Analyzed' : 'Not analyzed',
-      lastCrawl: lastCrawlResult 
-        ? new Date(lastCrawlResult.createdAt).toLocaleDateString() 
+      onPageScore: lastCrawlJob?.onPageScore ? `${lastCrawlJob.onPageScore}%` : '0%',
+      problems: lastCrawlJob?.problemsCount?.toString() || '0',
+      backlinks: lastCrawlJob?.backlinksCount?.toString() || '0',
+      crawlStatus: lastCrawlJob ? 'Analyzed' : 'Not analyzed',
+      lastCrawl: lastCrawlJob 
+        ? new Date(lastCrawlJob.createdAt).toLocaleDateString() 
         : 'Never',
       pages: crawlCount.toString(),
       createdAt: project.createdAt,

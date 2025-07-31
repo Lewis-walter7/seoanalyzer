@@ -28,7 +28,7 @@ export function setJWTToken(token: string): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', token);
       // Also set in cookie for server-side access
-      document.cookie = `accessToken=${token}; path=/; max-age=${15 * 60}`; // 15 minutes
+      document.cookie = `accessToken=${token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
     }
   } catch (error) {
     console.error('Error setting JWT token:', error);

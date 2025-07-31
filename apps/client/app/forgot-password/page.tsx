@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
     setTimeout(() => {
       setIsLoading(false);
       setIsEmailSent(true);
-      console.log('Password reset requested for:', email);
+      // Password reset email sent
     }, 2000);
   };
 

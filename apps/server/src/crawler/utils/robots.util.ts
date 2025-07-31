@@ -47,7 +47,9 @@ export class RobotsUtil {
 
       return robots;
     } catch (error) {
-      console.warn(`Failed to fetch robots.txt for ${domain}:`, (error as Error).message);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[RobotsUtil] Failed to fetch robots.txt for ${domain}:`, (error as Error).message);
+      }
       // Return a permissive robots.txt parser if we can't fetch it
       const robots = robotsParser(`${domain}/robots.txt`, '');
       this.robotsCache.set(cacheKey, robots);
@@ -67,7 +69,9 @@ export class RobotsUtil {
       const robots = await this.getRobotsTxt(domain, userAgent);
       return robots.isAllowed(url, userAgent);
     } catch (error) {
-      console.warn(`Error checking robots.txt for ${url}:`, (error as Error).message);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[RobotsUtil] Error checking robots.txt for ${url}:`, (error as Error).message);
+      }
       // Default to allowing if we can't check
       return true;
     }
@@ -86,7 +90,9 @@ export class RobotsUtil {
       
       return delay ? delay * 1000 : null; // Convert to milliseconds
     } catch (error) {
-      console.warn(`Error getting crawl delay for ${url}:`, (error as Error).message);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[RobotsUtil] Error getting crawl delay for ${url}:`, (error as Error).message);
+      }
       return null;
     }
   }
@@ -99,7 +105,9 @@ export class RobotsUtil {
       const robots = await this.getRobotsTxt(domain, userAgent);
       return robots.getSitemaps() || [];
     } catch (error) {
-      console.warn(`Error getting sitemaps for ${domain}:`, (error as Error).message);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[RobotsUtil] Error getting sitemaps for ${domain}:`, (error as Error).message);
+      }
       return [];
     }
   }
@@ -135,7 +143,9 @@ export class RobotsUtil {
         sitemap: await this.getSitemaps(domain, userAgent),
       };
     } catch (error) {
-      console.warn(`Error parsing robots.txt rules for ${domain}:`, (error as Error).message);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[RobotsUtil] Error parsing robots.txt rules for ${domain}:`, (error as Error).message);
+      }
       return {
         userAgent,
         allow: [],

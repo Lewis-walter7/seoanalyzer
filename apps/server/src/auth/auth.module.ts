@@ -4,8 +4,11 @@ import { AuthGuard } from './auth.guard';
 import { AdminGuard } from './admin.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller'; // <- missing import
+import { AuthController } from './auth.controller';
 import { ConfigModule } from '@nestjs/config'
+
+// Ensure JWT_SECRET is available and throw if missing
+const secret = process.env.JWT_SECRET ?? (()=>{ throw new Error('JWT_SECRET missing')})();
 
 @Global()
 @Module({
@@ -14,12 +17,12 @@ import { ConfigModule } from '@nestjs/config'
     ConfigModule,
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key',
-      signOptions: { expiresIn: '24h' },
+      secret,
+      signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [AuthController], // <- missing
-  providers: [AuthGuard, AdminGuard, AuthService], // <- AuthService was missing
+  controllers: [AuthController],
+  providers: [AuthGuard, AdminGuard, AuthService],
   exports: [AuthGuard, AdminGuard, JwtModule, AuthService],
 })
 export class AuthModule {}

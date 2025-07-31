@@ -2,7 +2,6 @@ import { tokenStorage, authApi } from './auth-client';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const INTERNAL_API_BASE_URL = '/api';
 
 // Enhanced fetch wrapper with authentication and error handling
 export class ApiClient {
@@ -115,7 +114,7 @@ export class ApiClient {
 
 // Default instances
 export const externalApi = new ApiClient(API_BASE_URL, true); // For NestJS backend with token auth
-export const internalApi = new ApiClient(INTERNAL_API_BASE_URL, false); // For Next.js API routes without token auth
+export const internalApi = new ApiClient(API_BASE_URL, true); // For Next.js API routes without token auth
 
 // Convenience functions for common operations
 export const api = {
@@ -131,11 +130,16 @@ export const api = {
   },
 
   async getProjects() {
-    return internalApi.get('/v1/projects');
+    try {
+      const result = await externalApi.get('/v1/projects');
+      return result;
+    } catch (error) {
+      throw error;
+    }
   },
 
-  async createProject(data: { name: string; url: string; description?: string }) {
-    return internalApi.post('/v1/projects', data);
+  async createProject(data: { name: string; url: string; description?: string, targetKeywords?: string[], competitors?: string[] }) {
+    return externalApi.post('/v1/projects', data);
   },
 
   async deleteProject(id: string) {
@@ -148,7 +152,7 @@ export const api = {
     return externalApi.get('/v1/projects');
   },
 
-  async createBackendProject(data: { name: string; domain: string; description?: string, targetKeywords?: string[], competitors?: string[] }) {
+  async createBackendProject(data: { name: string; url: string; description?: string, targetKeywords?: string[], competitors?: string[] }) {
     return externalApi.post('/v1/projects', data);
   },
 

@@ -1,7 +1,6 @@
 // Mock IntaSend module first
 const mockCollection = {
-  create: jest.fn(),
-  verify_signature: jest.fn(),
+  charge: jest.fn(),
   status: jest.fn(),
 };
 
@@ -39,27 +38,27 @@ describe('IntaSendService', () => {
   });
 
   describe('verifyWebhookSignature', () => {
+    beforeEach(() => {
+      process.env.INTASEND_WEBHOOK_SECRET = 'test-webhook-secret';
+    });
+
     it('should return true for valid signature', () => {
       const rawBody = '{"invoice_id": "test_invoice"}';
-      const signature = 'valid_signature';
-      
-      mockCollection.verify_signature.mockReturnValue(true);
+      // Create a valid HMAC signature
+      const crypto = require('crypto');
+      const signature = crypto
+        .createHmac('sha256', 'test-webhook-secret')
+        .update(rawBody)
+        .digest('base64');
 
       const result = service.verifyWebhookSignature(rawBody, signature);
       
       expect(result).toBe(true);
-      expect(mockCollection.verify_signature).toHaveBeenCalledWith(
-        rawBody,
-        signature,
-        process.env.INTASEND_WEBHOOK_SECRET
-      );
     });
 
     it('should return false for invalid signature', () => {
       const rawBody = '{"invoice_id": "test_invoice"}';
       const signature = 'invalid_signature';
-      
-      mockCollection.verify_signature.mockReturnValue(false);
 
       const result = service.verifyWebhookSignature(rawBody, signature);
       
@@ -83,27 +82,21 @@ describe('IntaSendService', () => {
 
     it('should handle Buffer input', () => {
       const rawBody = Buffer.from('{"invoice_id": "test_invoice"}');
-      const signature = 'valid_signature';
-      
-      mockCollection.verify_signature.mockReturnValue(true);
+      // Create a valid HMAC signature for the string version
+      const crypto = require('crypto');
+      const signature = crypto
+        .createHmac('sha256', 'test-webhook-secret')
+        .update('{"invoice_id": "test_invoice"}')
+        .digest('base64');
 
       const result = service.verifyWebhookSignature(rawBody, signature);
       
       expect(result).toBe(true);
-      expect(mockCollection.verify_signature).toHaveBeenCalledWith(
-        '{"invoice_id": "test_invoice"}',
-        signature,
-        process.env.INTASEND_WEBHOOK_SECRET
-      );
     });
 
     it('should return false on error', () => {
       const rawBody = '{"invoice_id": "test_invoice"}';
-      const signature = 'valid_signature';
-      
-      mockCollection.verify_signature.mockImplementation(() => {
-        throw new Error('Verification error');
-      });
+      const signature = 'short'; // This will cause a length mismatch error
 
       const result = service.verifyWebhookSignature(rawBody, signature);
       
@@ -139,12 +132,12 @@ describe('IntaSendService', () => {
         updated_at: '2023-12-01T10:00:00Z',
       };
 
-      mockCollection.create.mockResolvedValue(mockResponse);
+      mockCollection.charge.mockResolvedValue(mockResponse);
 
       const result = await service.createPaymentLink(payload);
       
       expect(result).toEqual(mockResponse);
-      expect(mockCollection.create).toHaveBeenCalledWith(payload);
+      expect(mockCollection.charge).toHaveBeenCalledWith(payload);
     });
 
     it('should handle payment link creation errors', async () => {
@@ -154,7 +147,7 @@ describe('IntaSendService', () => {
         email: 'test@example.com',
       };
 
-      mockCollection.create.mockRejectedValue(new Error('Payment link creation failed'));
+      mockCollection.charge.mockRejectedValue(new Error('Payment link creation failed'));
 
       await expect(service.createPaymentLink(payload)).rejects.toThrow(
         'Failed to create payment link: Payment link creation failed'
@@ -220,12 +213,12 @@ describe('IntaSendService', () => {
 
   describe('health check', () => {
     it('should return true for successful health check', async () => {
-      mockCollection.create.mockRejectedValue(new Error('Expected test error'));
+      mockCollection.charge.mockRejectedValue(new Error('Expected test error'));
 
       const result = await service.healthCheck();
       
       expect(result).toBe(true);
-      expect(mockCollection.create).toHaveBeenCalledWith({
+      expect(mockCollection.charge).toHaveBeenCalledWith({
         amount: 1,
         currency: 'KES',
         email: 'test@example.com',
@@ -234,7 +227,7 @@ describe('IntaSendService', () => {
     });
 
     it('should return false for failed health check', async () => {
-      mockCollection.create.mockImplementation(() => {
+      mockCollection.charge.mockImplementation(() => {
         throw new Error('Authentication failed');
       });
 

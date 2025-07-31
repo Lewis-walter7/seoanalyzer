@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     return res;
   } catch (error: any) {
-    console.error('Registration error:', error);
+    console.error('[Auth API] Registration error:', error.response?.data?.message || error.message);
 
     if (error.response?.status === 400) {
       return NextResponse.json(

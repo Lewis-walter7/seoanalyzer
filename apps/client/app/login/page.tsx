@@ -36,7 +36,7 @@ export default function LoginPage() {
       toast.success("Login successful!");
       router.push("/");
     } catch (error: any) {
-      console.error("Login error:", error);
+      // Handle login error with structured error handling
       
       // Check if the error has field-specific information
       if (error.field) {

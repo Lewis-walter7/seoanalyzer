@@ -60,7 +60,6 @@ export class AuthService {
       where: { email },
     });
 
-    console.log(credentials)
     if (existingUser) {
       throw new BadRequestException('User already exists with this email');
     }
@@ -129,8 +128,9 @@ export class AuthService {
     // Verify refresh token
     let payload: TokenPayload;
     try {
+      const jwtSecret = this.configService.get('JWT_SECRET') ?? (()=>{ throw new Error('JWT_SECRET missing')})();
       payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.get('JWT_SECRET'),
+        secret: jwtSecret,
       });
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
@@ -222,8 +222,9 @@ export class AuthService {
     // Verify JWT
     let payload: TokenPayload;
     try {
+      const jwtSecret = this.configService.get('JWT_SECRET') ?? (()=>{ throw new Error('JWT_SECRET missing')})();
       payload = await this.jwtService.verifyAsync(accessToken, {
-        secret: this.configService.get('JWT_SECRET'),
+        secret: jwtSecret,
       });
     } catch (error) {
       throw new UnauthorizedException('Invalid access token');
@@ -404,13 +405,14 @@ export class AuthService {
     const accessTokenExp = new Date(now.getTime() + this.ACCESS_TOKEN_EXPIRY * 1000);
     const refreshTokenExp = new Date(now.getTime() + this.REFRESH_TOKEN_EXPIRY * 1000);
 
-    // Create session first to get sessionId
+    // Create session first to get real sessionId
     const session = await this.prisma.session.create({
       data: {
         userId: user.id,
         sessionToken: this.generateSecureToken(),
         expires: refreshTokenExp,
-        refreshToken: this.generateSecureToken(),
+        refreshToken: this.generateSecureToken(), // temporary
+        accessToken: this.generateSecureToken(), // temporary, will be replaced
         accessTokenExp,
         refreshTokenExp,
         deviceInfo,
@@ -418,7 +420,7 @@ export class AuthService {
       },
     });
 
-    // Generate JWT tokens with sessionId
+    // Generate JWT tokens with real session ID
     const accessTokenPayload: TokenPayload = {
       userId: user.id,
       email: user.email!,

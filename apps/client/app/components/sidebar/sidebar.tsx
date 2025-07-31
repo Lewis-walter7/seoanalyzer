@@ -19,7 +19,7 @@ export default function Sidebar({ open, selectedProject }: SidebarProps) {
   const { theme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
 
   const activeProject = !!selectedProject;
@@ -160,7 +160,7 @@ export default function Sidebar({ open, selectedProject }: SidebarProps) {
             <button
               onClick={() => {
                 setMenuOpen(false);
-                signOut({ callbackUrl: '/' });
+                logout();
               }}
               className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-900 space-x-2"
             >

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import IntaSend from 'intasend-node';
+import IntaSend = require('intasend-node');
 import * as crypto from 'crypto'; 
 
 export interface PaymentLinkPayload {

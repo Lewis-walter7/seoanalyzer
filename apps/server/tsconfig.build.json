@@ -5,6 +5,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "module": "CommonJS",
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
     "types": ["node"]
   },
   "include": ["src/**/*"]

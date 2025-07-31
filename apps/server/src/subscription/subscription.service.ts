@@ -345,8 +345,17 @@ export class SubscriptionService {
       });
 
       if (!subscription) {
-        // No active subscription - allow basic free usage or deny based on your business logic
-        return false;
+        // No active subscription - allow limited free usage
+        // For testing purposes, allow basic operations
+        switch (usageType) {
+case UsageType.ANALYSIS_RUN:
+          return true; // Temporarily allow unlimited runs for testing
+          case UsageType.PROJECT_CREATED:
+          case UsageType.REPORT_GENERATED:
+            return true; // Allow free basic usage
+          default:
+            return false; // Restrict premium features
+        }
       }
 
       // Get current period start (monthly renewal)

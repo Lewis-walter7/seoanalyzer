@@ -13,13 +13,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleInit() {
     // Connect to the database when the module is initialized
     await this.$connect();
-    console.log('📊 Connected to MongoDB via Prisma');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📊 Connected to MongoDB via Prisma');
+    }
   }
 
   async onModuleDestroy() {
     // Disconnect from the database when the module is destroyed
     await this.$disconnect();
-    console.log('📊 Disconnected from MongoDB');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📊 Disconnected from MongoDB');
+    }
   }
 
   // Helper method to check database connection
@@ -64,7 +68,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       },
     });
 
-    console.log(`🧹 Cleaned up ${result.count} old crawl jobs`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🧹 Cleaned up ${result.count} old crawl jobs`);
+    }
     return result.count;
   }
 }

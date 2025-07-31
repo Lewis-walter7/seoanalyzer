@@ -56,7 +56,7 @@ export class CrawlerService extends EventEmitter {
    * Start crawling a website using fetch
    */
   async crawl(job: CrawlJob): Promise<CrawlResult> {
-    const jobId = job.id || generateCrawlId();
+    const jobId = job.id
     
     this.logger.log(`Starting fallback crawl job ${jobId} for ${job.urls.join(', ')}`);
     
@@ -80,10 +80,16 @@ export class CrawlerService extends EventEmitter {
     // Add initial URLs to queue
     job.urls.forEach(url => {
       const normalizedUrl = normalizeUrl(url);
+      this.logger.log(`Processing URL: ${url} -> ${normalizedUrl}`);
       if (isValidUrl(normalizedUrl)) {
         crawlState.urlQueue.add(normalizedUrl);
+        this.logger.log(`Added URL to queue: ${normalizedUrl}`);
+      } else {
+        this.logger.warn(`Invalid URL skipped: ${normalizedUrl}`);
       }
     });
+    
+    this.logger.log(`Initial queue size: ${crawlState.urlQueue.size}`);
 
     // Store active crawl
     this.activeCrawls.set(jobId, crawlState);
@@ -101,21 +107,17 @@ export class CrawlerService extends EventEmitter {
 
     this.emit('crawl-started', jobId);
     return new Promise<CrawlResult>((resolve, reject) => {
-    this.once('crawl-finished', (result: CrawlResult) => {
-      if (result.jobId === jobId) {
-        resolve(result);
-      }
-    });
+      this.once('crawl-finished', (result: CrawlResult) => {
+        if (result.jobId === jobId) {
+          resolve(result);
+        }
+      });
 
-    this.once('crawl-error', (error: CrawlError) => {
-      reject(error);
-    });
+      this.once('crawl-error', (error: CrawlError) => {
+        reject(error);
+      });
 
-    this.executeCrawl(crawlState).catch(err => {
-      this.logger.error(`Crawl job ${jobId} failed:`, err);
-      reject(err);
     });
-  });
   }
 
   /**
@@ -369,6 +371,7 @@ export class CrawlerService extends EventEmitter {
       size: html.length,
       loadTime,
       depth,
+      html, // Include HTML content for SEO analysis
       links: Array.from(new Set(links)),
       assets: {
         images,

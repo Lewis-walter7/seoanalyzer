@@ -152,7 +152,7 @@ export default function ToolsPage() {
 
   const handleToolClick = (toolId: string) => {
     // TODO: Navigate to specific tool page or open tool modal
-    console.log(`Opening tool: ${toolId}`);
+    // Router navigation will be implemented when tool pages are ready
   };
 
   return (
