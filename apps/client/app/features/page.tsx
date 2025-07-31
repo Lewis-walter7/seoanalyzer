@@ -82,8 +82,8 @@ export default function FeaturesPage() {
                 return (
                   <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center shadow-lg hover:shadow-xl transition-shadow">
                     <IconComponent className="h-8 w-8 mx-auto mb-3 text-blue-600 dark:text-blue-400" />
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{stat.value}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">{stat.label}</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1" aria-label={`Value: ${stat.value}`}>{stat.value}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300" aria-label={`Label: ${stat.label}`}>{stat.label}</div>
                   </div>
                 );
               })}

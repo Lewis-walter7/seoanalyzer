@@ -1,3 +1,4 @@
+import { AuditResponse } from '@/app/project/[id]/auditresults/page';
 import { tokenStorage, authApi } from './auth-client';
 
 // API Configuration
@@ -136,6 +137,10 @@ export const api = {
     } catch (error) {
       throw error;
     }
+  },
+
+  async getAuditData(projectId: string): Promise<AuditResponse> {
+    return externalApi.get(`/v1/projects/${projectId}/audits`);
   },
 
   async createProject(data: { name: string; url: string; description?: string, targetKeywords?: string[], competitors?: string[] }) {

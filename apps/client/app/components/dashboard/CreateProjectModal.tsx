@@ -44,6 +44,9 @@ export default function CreateProjectModal({ isOpen, onClose, onProjectCreated }
   });
 
   const handleSubmit = async (data: CreateProjectFormData) => {
+    console.log('🚀 Form submitted with data:', data);
+    console.log('🔐 Auth status:', isAuthenticated);
+    console.log('📝 Form errors:', form.formState.errors);
     
     if (!isAuthenticated) {
       toast.error('You must be logged in to create a project.');
@@ -52,6 +55,7 @@ export default function CreateProjectModal({ isOpen, onClose, onProjectCreated }
     }
 
     if (isSubmitting) {
+      console.log('⚠️ Already submitting, skipping...');
       return;
     }
     
@@ -60,7 +64,7 @@ export default function CreateProjectModal({ isOpen, onClose, onProjectCreated }
       const projectData = {
         name: data.name,
         url: data.url,
-        description: data.description || undefined,
+        description: data.description || null,
         targetKeywords: typeof data.targetKeywords === 'string'
           ? data.targetKeywords.split(',').map(k => k.trim()).filter(Boolean)
           : data.targetKeywords || [],
@@ -69,6 +73,7 @@ export default function CreateProjectModal({ isOpen, onClose, onProjectCreated }
           : data.competitors || [],
       };
 
+      console.log('🌐 Creating project with data:', projectData);
       await onProjectCreated(projectData);
       
       // Reset form and close modal on success
@@ -302,6 +307,12 @@ const nextStep = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
+                onClick={() => {
+                  console.log('🔘 Create Project button clicked');
+                  console.log('📝 Form valid:', form.formState.isValid);
+                  console.log('🎯 Current form values:', form.getValues());
+                  console.log('❌ Form errors:', form.formState.errors);
+                }}
                 className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Creating...' : 'Create Project'}

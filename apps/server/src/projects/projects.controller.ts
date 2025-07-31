@@ -68,5 +68,11 @@ export class ProjectsController {
   async analyzeProject(@User() user: AuthenticatedUser, @Param('id') projectId: string) {
     return this.projectService.analyzeProject(user.id, projectId);
   }
+
+  @UseGuards(AuthGuard)
+  @Get(':id/audits')
+  async getProjectAudits(@User() user: AuthenticatedUser, @Param('id') projectId: string) {
+    return this.projectService.getProjectAudits(user.id, projectId);
+  }
 }
 

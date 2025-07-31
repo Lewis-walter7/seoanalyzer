@@ -7,7 +7,6 @@ import ProjectSelector from './ProjectSelector';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/app/components/providers/session-provider';
 import toast from 'react-hot-toast';
-import SeoAnalytics from '@/features/SeoAnalytics';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -26,7 +25,14 @@ export default function Dashboard() {
     refreshProjects
   } = useProjects();
 
-
+  console.log('🏠 Dashboard render:', {
+    user,
+    userProjects,
+    projectsCount: userProjects?.length || 0,
+    selectedProject,
+    loading,
+    error
+  });
 
   const handleTabClick = (tab: 'projects' | 'tools') => {
     if (tab === 'tools') {
@@ -36,7 +42,11 @@ export default function Dashboard() {
     }
   };
 
-  const handleProjectCreated = async (projectData: any) => {
+  const handleProjectCreated = async (projectData: { name: string; 
+    url: string; description?: string, 
+    targetKeywords?: string[], 
+    competitors?: string[] 
+  }) => {
     const result = await createProject(projectData);
     if (result.success) {
       toast.success('Project created successfully!');
@@ -57,6 +67,14 @@ export default function Dashboard() {
     } else {
       toast.error(result.error || 'Failed to delete project');
     }
+  };
+
+  const handleAnalyzeProject = (projectId: string) => {
+    router.push(`/project/${projectId}/auditresults`);
+  };
+
+  const handleViewReports = (projectId: string) => {
+    router.push(`/project/${projectId}/auditresults`);
   };
 
   // Show loading state
@@ -113,28 +131,27 @@ export default function Dashboard() {
           />
         </div>
 
-          {/* SEO Analytics Integration */}
-          <SeoAnalytics />
-
-          {/* Tabs */}
+        {/* Tabs */}
         <div className="flex space-x-1 sm:space-x-2 mb-6 lg:mb-8 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-lg">
           <button
-            className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base ${
+            className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base min-h-[44px] ${
               activeTab === 'projects' 
                 ? 'bg-linear-to-r from-blue-500 to-purple-500 text-white shadow-md' 
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
             onClick={() => handleTabClick('projects')}
+            aria-label="View projects tab"
           >
             <span className="hidden sm:inline">📊 </span>Projects
           </button>
           <button
-            className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base ${
+            className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base min-h-[44px] ${
               activeTab === 'tools' 
                 ? 'bg-linear-to-r from-blue-500 to-purple-500 text-white shadow-md' 
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
             onClick={() => handleTabClick('tools')}
+            aria-label="View tools tab"
           >
             <span className="hidden sm:inline">🛠️ </span>Tools
           </button>
@@ -150,11 +167,11 @@ export default function Dashboard() {
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-6 space-y-4 lg:space-y-0">
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center mb-3 space-y-2 sm:space-y-0">
-                      <div className="bg-linear-to-r from-green-500 to-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold mr-0 sm:mr-3 w-fit">
-                        SELECTED
-                      </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">{selectedProject.name}</h2>
-                    </div>
+                <div className="bg-linear-to-r from-green-500 to-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold mr-0 sm:mr-3 w-fit" aria-label="Project selected">
+                  SELECTED
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">{selectedProject.name}</h2>
+              </div>
                     <a href={selectedProject.url} className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 text-sm font-medium break-all" target="_blank">
                       🌐 {selectedProject.url}
                     </a>
@@ -164,7 +181,7 @@ export default function Dashboard() {
                       ⭐ Premium
                     </div>
                     <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Rankings</div>
-                    <button className="bg-linear-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-300">
+                    <button className="bg-linear-to-r from-blue-500 to-purple-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-300 min-h-[44px] min-w-[44px]" aria-label="Add keywords to project">
                       ➕ Add keywords
                     </button>
                   </div>
@@ -213,10 +230,16 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                    <button className="bg-linear-to-r from-green-500 to-emerald-500 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 text-sm sm:text-base">
+                    <button 
+                      onClick={() => handleAnalyzeProject(selectedProject.id)}
+                      className="bg-linear-to-r from-green-500 to-emerald-500 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 text-sm sm:text-base min-h-[44px] min-w-[44px]"
+                    >
                       🚀 Analyze
                     </button>
-                    <button className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 text-sm sm:text-base">
+                    <button 
+                      onClick={() => handleViewReports(selectedProject.id)}
+                      className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 text-sm sm:text-base min-h-[44px] min-w-[44px]"
+                    >
                       📊 View Reports
                     </button>
                   </div>
@@ -234,14 +257,13 @@ export default function Dashboard() {
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Project Selected</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">Select a project from the dropdown above to view its details and analytics.</p>
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => setShowCreateModal(true)}
-                      className="bg-linear-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-600 hover:to-blue-600 transition-all duration-300 w-full"
-                    >
-                      ✨ Create Your First Project
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="bg-linear-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-green-600 hover:to-blue-600 transition-all duration-300 min-h-[44px] min-w-[44px]"
+                    aria-label="Create your first project"
+                  >
+                    ✨ Create Your First Project
+                  </button>
                 </div>
               </div>
             )}            

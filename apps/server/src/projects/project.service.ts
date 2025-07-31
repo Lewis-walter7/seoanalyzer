@@ -36,6 +36,34 @@ export interface ProjectResponse {
   updatedAt: Date;
 }
 
+export interface SeoAuditPage {
+  id: string;
+  url: string;
+  title: string | null;
+  titleTag: string | null;
+  metaDescription: string | null;
+  h1Count: number;
+  imgMissingAlt: number;
+  totalLinks: number;
+  performanceScore: number | null;
+  seoScore?: number | null;
+  accessibilityScore?: number | null;
+  internalLinksCount: number;
+  externalLinksCount: number;
+  brokenLinksCount: number;
+  loadTime?: number | null;
+  pageSize?: number | null;
+  hasCanonical: boolean;
+  isIndexable: boolean;
+  crawledAt: Date;
+}
+
+export interface AuditResponse {
+  id: string;
+  createdAt: Date;
+  pages: SeoAuditPage[];
+}
+
 @Injectable()
 export class ProjectService {
   constructor(
@@ -310,6 +338,101 @@ export class ProjectService {
       status: 'started',
       crawlJobId: crawlJob.id,
     };
+  }
+
+  /**
+   * Get audits for a specific project
+   */
+  async getProjectAudits(userId: string, projectId: string): Promise<{ audits: AuditResponse[] }> {
+    try {
+      // 1. Verify JWT → user → project ownership (return 401/403 as needed)
+      const project = await this.prisma.project.findFirst({
+        where: {
+          id: projectId,
+          userId,
+        },
+      });
+
+      if (!project) {
+        throw new NotFoundException('Project not found');
+      }
+
+      // 2. Query DB: SeoAudit.findMany({ where: { projectId }, include: { pages: true } })
+      // Since SeoAudit is linked to pages, we need to get audits through the project relationship
+      const seoAudits = await this.prisma.seoAudit.findMany({
+        where: { projectId },
+        include: {
+          page: {
+            select: {
+              id: true,
+              url: true,
+              title: true,
+              crawledAt: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Group the audits by creation date (audit sessions)
+      const auditMap = new Map<string, { id: string; createdAt: Date; pages: SeoAuditPage[] }>();
+
+      for (const audit of seoAudits) {
+        const auditDate = audit.createdAt.toDateString();
+        const auditId = audit.id;
+        
+        // For each Page, select SEO metrics: titleTag, metaDescription, h1Count, imgMissingAlt, totalLinks, performanceScore, etc.
+        const seoAuditPage: SeoAuditPage = {
+          id: audit.page.id,
+          url: audit.page.url,
+          title: audit.page.title,
+          titleTag: audit.titleTag,
+          metaDescription: audit.metaDescription,
+          h1Count: audit.h1Count,
+          imgMissingAlt: audit.imagesWithoutAlt,
+          totalLinks: audit.internalLinksCount + audit.externalLinksCount,
+          performanceScore: audit.performanceScore,
+          seoScore: audit.seoScore,
+          accessibilityScore: audit.accessibilityScore,
+          internalLinksCount: audit.internalLinksCount,
+          externalLinksCount: audit.externalLinksCount,
+          brokenLinksCount: audit.brokenLinksCount,
+          loadTime: audit.loadTime,
+          pageSize: audit.pageSize,
+          hasCanonical: audit.hasCanonical,
+          isIndexable: audit.isIndexable,
+          crawledAt: audit.page.crawledAt,
+        };
+
+        if (!auditMap.has(auditDate)) {
+          auditMap.set(auditDate, {
+            id: auditId,
+            createdAt: audit.createdAt,
+            pages: [],
+          });
+        }
+
+        auditMap.get(auditDate)!.pages.push(seoAuditPage);
+      }
+
+      // Convert map to array and sort by creation date
+      const audits: AuditResponse[] = Array.from(auditMap.values())
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      
+      return { audits };
+
+    } catch (error) {
+      // 4. Mirror error handling style of existing /v1/projects proxy route (catch block with status 401/403/500)
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      console.error('Error fetching project audits:', error);
+      throw new BadRequestException('Failed to fetch project audits');
+    }
   }
 
   /**
