@@ -21,6 +21,23 @@ import {
 } from './utils/url.util';
 
 /**
+ * Interface for crawl state to improve type safety
+ */
+interface CrawlState {
+  jobId: string;
+  job: Required<CrawlJob>;
+  startTime: Date;
+  urlQueue: Set<string>;
+  processedUrls: Set<string>;
+  crawledPages: Map<string, CrawledPage>;
+  errors: CrawlError[];
+  currentDepth: number;
+  domainDelays: Map<string, number>;
+  lastCrawlTime: Map<string, number>;
+  semaphore: Semaphore;
+}
+
+/**
  * Fallback CrawlerService that uses fetch instead of Playwright
  * This is useful for testing and environments where Playwright isn't available
  */
@@ -28,7 +45,7 @@ import {
 export class CrawlerService extends EventEmitter {
   private readonly logger = new Logger(CrawlerService.name);
   private robotsUtil: RobotsUtil;
-  private activeCrawls = new Map<string, any>();
+  private activeCrawls = new Map<string, CrawlState>();
   private defaultOptions: Required<CrawlerOptions> = {
     concurrency: 5,
     defaultUserAgent: 'SEO-Analyzer-Bot/1.0 (+https://seo-analyzer.com/bot)',
@@ -36,6 +53,7 @@ export class CrawlerService extends EventEmitter {
     defaultRetries: 3,
     respectRobotsTxt: true,
     defaultCrawlDelay: 1000,
+    defaultMaxPages: 1000, // Default max pages to crawl
   };
 
   constructor() {
@@ -56,7 +74,7 @@ export class CrawlerService extends EventEmitter {
    * Start crawling a website using fetch
    */
   async crawl(job: CrawlJob): Promise<CrawlResult> {
-    const jobId = job.id
+    const jobId = job.id || generateCrawlId();
     
     this.logger.log(`Starting fallback crawl job ${jobId} for ${job.urls.join(', ')}`);
     
@@ -64,17 +82,27 @@ export class CrawlerService extends EventEmitter {
     this.validateCrawlJob(job);
     
     // Initialize crawl state
-    const crawlState = {
+    const crawlState: CrawlState = {
       jobId,
-      job,
+      job: {
+        ...job,
+        maxPages: job.maxPages || this.defaultOptions.defaultMaxPages,
+        maxDepth: job.maxDepth || 3,
+        timeout: job.timeout || this.defaultOptions.defaultTimeout,
+        retries: job.retries || this.defaultOptions.defaultRetries,
+        crawlDelay: job.crawlDelay || this.defaultOptions.defaultCrawlDelay,
+        userAgent: job.userAgent || this.defaultOptions.defaultUserAgent,
+        respectRobotsTxt: job.respectRobotsTxt !== false ? this.defaultOptions.respectRobotsTxt : false,
+      } as Required<CrawlJob>,
       startTime: new Date(),
       urlQueue: new Set<string>(),
       processedUrls: new Set<string>(),
       crawledPages: new Map<string, CrawledPage>(),
-      errors: [],
+      errors: [] as CrawlError[],
       currentDepth: 0,
       domainDelays: new Map<string, number>(),
       lastCrawlTime: new Map<string, number>(),
+      semaphore: new Semaphore(job.concurrency || this.defaultOptions.concurrency),
     };
 
     // Add initial URLs to queue
@@ -94,84 +122,120 @@ export class CrawlerService extends EventEmitter {
     // Store active crawl
     this.activeCrawls.set(jobId, crawlState);
 
-    // Start crawling asynchronously
-    this.executeCrawl(crawlState).catch(error => {
+    try {
+      // Start crawling
+      const result = await this.executeCrawl(crawlState);
+      this.emit('crawl-finished', result);
+      return result;
+    } catch (error) {
       this.logger.error(`Crawl job ${jobId} failed:`, error);
+      const errorResult = this.generateCrawlResult(crawlState, false);
       this.emit('crawl-error', {
         url: 'unknown',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date(),
         depth: 0,
       });
-    });
-
-    this.emit('crawl-started', jobId);
-    return new Promise<CrawlResult>((resolve, reject) => {
-      this.once('crawl-finished', (result: CrawlResult) => {
-        if (result.jobId === jobId) {
-          resolve(result);
-        }
-      });
-
-      this.once('crawl-error', (error: CrawlError) => {
-        reject(error);
-      });
-
-    });
+      throw errorResult;
+    } finally {
+      this.activeCrawls.delete(jobId);
+    }
   }
 
   /**
    * Execute the crawl job using fetch
    */
-  private async executeCrawl(crawlState: any): Promise<void> {
+  private async executeCrawl(crawlState: CrawlState): Promise<CrawlResult> {
     const { jobId, job } = crawlState;
     
     try {
-      let processedCount = 0;
+      this.emit('crawl-started', jobId);
       
-      while (crawlState.urlQueue.size > 0 && processedCount < job.maxPages) {
-        const urlsToProcess = Array.from(crawlState.urlQueue).slice(0, Math.min(5, job.maxPages - processedCount));
-        crawlState.urlQueue.clear();
+      while (crawlState.urlQueue.size > 0 && crawlState.processedUrls.size < job.maxPages) {
+        const urlsToProcess = Array.from(crawlState.urlQueue)
+          .slice(0, Math.min(job.concurrency || this.defaultOptions.concurrency, job.maxPages - crawlState.processedUrls.size));
+        
+        // Clear processed URLs from queue
+        urlsToProcess.forEach(url => crawlState.urlQueue.delete(url));
 
-        // Process URLs with limited concurrency
-        const crawlPromises = (urlsToProcess as string[]).map(url => 
-          this.crawlSinglePageWithFetch(url, crawlState)
+        // Process URLs with controlled concurrency
+        const crawlPromises = urlsToProcess.map((url) => 
+          this.crawlSinglePageWithRetry(url, crawlState)
         );
 
         await Promise.allSettled(crawlPromises);
-        processedCount += urlsToProcess.length;
 
         // Update progress
         this.emitProgress(crawlState);
 
         // Check if we've reached max depth
         if (crawlState.currentDepth >= job.maxDepth) {
+          this.logger.log(`Reached max depth ${job.maxDepth}, stopping crawl`);
           break;
         }
 
         crawlState.currentDepth++;
+        
+        // Small delay between batches to prevent overwhelming the server
+        if (crawlState.urlQueue.size > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
 
       // Mark crawl as completed
-      const result = this.generateCrawlResult(crawlState, true);
-      this.emit('crawl-finished', result);
-      
-      // Clean up
-      this.activeCrawls.delete(jobId);
+      return this.generateCrawlResult(crawlState, true);
       
     } catch (error) {
       this.logger.error(`Error during crawl execution for job ${jobId}:`, error);
-      const result = this.generateCrawlResult(crawlState, false);
-      this.emit('crawl-finished', result);
-      this.activeCrawls.delete(jobId);
+      return this.generateCrawlResult(crawlState, false);
+    }
+  }
+
+  /**
+   * Crawl a single page with retry logic
+   */
+  private async crawlSinglePageWithRetry(url: string, crawlState: CrawlState): Promise<void> {
+    const { job } = crawlState;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt < job.retries; attempt++) {
+      try {
+        await crawlState.semaphore.acquire();
+        await this.crawlSinglePageWithFetch(url, crawlState);
+        return;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        this.logger.warn(`Attempt ${attempt + 1}/${job.retries} failed for ${url}: ${lastError.message}`);
+        
+        if (attempt < job.retries - 1) {
+          // Exponential backoff
+          const delay = Math.pow(2, attempt) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      } finally {
+        crawlState.semaphore.release();
+      }
+    }
+    
+    // All retries failed
+    if (lastError) {
+      const crawlError: CrawlError = {
+        url,
+        error: lastError.message,
+        timestamp: new Date(),
+        depth: crawlState.currentDepth,
+      };
+      
+      crawlState.errors.push(crawlError);
+      this.emit('crawl-error', crawlError);
     }
   }
 
   /**
    * Crawl a single page using fetch
    */
-  private async crawlSinglePageWithFetch(url: string, crawlState: any): Promise<void> {
-    const { job, processedUrls, crawledPages, errors, domainDelays, lastCrawlTime } = crawlState;
+  private async crawlSinglePageWithFetch(url: string, crawlState: CrawlState): Promise<void> {
+    const { job, processedUrls, crawledPages, domainDelays, lastCrawlTime } = crawlState;
     
     // Skip if already processed
     if (processedUrls.has(url)) {
@@ -181,36 +245,40 @@ export class CrawlerService extends EventEmitter {
     processedUrls.add(url);
     const startTime = Date.now();
     
-    try {
-      // Check robots.txt if enabled
-      if (job.respectRobotsTxt !== false && this.defaultOptions.respectRobotsTxt) {
-        const userAgent = job.userAgent || this.defaultOptions.defaultUserAgent;
-        const isAllowed = await this.robotsUtil.isAllowed(url, userAgent);
-        
-        if (!isAllowed) {
-          this.logger.debug(`URL blocked by robots.txt: ${url}`);
-          return;
-        }
-
-        // Get crawl delay from robots.txt
-        const robotsCrawlDelay = await this.robotsUtil.getCrawlDelay(url, userAgent);
-        if (robotsCrawlDelay) {
-          const domain = extractDomain(url);
-          domainDelays.set(domain, robotsCrawlDelay);
-        }
+    // Check robots.txt if enabled
+    if (job.respectRobotsTxt) {
+      const isAllowed = await this.robotsUtil.isAllowed(url, job.userAgent);
+      
+      if (!isAllowed) {
+        this.logger.debug(`URL blocked by robots.txt: ${url}`);
+        return;
       }
 
-      // Respect crawl delay
-      await this.respectCrawlDelay(url, domainDelays, lastCrawlTime, job.crawlDelay);
+      // Get crawl delay from robots.txt
+      const robotsCrawlDelay = await this.robotsUtil.getCrawlDelay(url, job.userAgent);
+      if (robotsCrawlDelay) {
+        const domain = extractDomain(url);
+        domainDelays.set(domain, robotsCrawlDelay);
+      }
+    }
 
-      // Fetch the page
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), job.timeout || this.defaultOptions.defaultTimeout);
-      
+    // Respect crawl delay
+    await this.respectCrawlDelay(url, domainDelays, lastCrawlTime, job.crawlDelay);
+
+    // Fetch the page
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), job.timeout);
+    
+    try {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': job.userAgent || this.defaultOptions.defaultUserAgent,
+          'User-Agent': job.userAgent,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'gzip, deflate',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
           ...job.customHeaders,
         },
       });
@@ -219,6 +287,12 @@ export class CrawlerService extends EventEmitter {
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('text/html')) {
+        this.logger.debug(`Skipping non-HTML content: ${url} (${contentType})`);
+        return;
       }
 
       const html = await response.text();
@@ -230,7 +304,7 @@ export class CrawlerService extends EventEmitter {
       // Store crawled page
       crawledPages.set(url, crawledPage);
       
-      // Add discovered URLs to queue
+      // Add discovered URLs to queue for next depth level
       this.addDiscoveredUrls(crawledPage.links, url, crawlState);
       
       // Emit page crawled event
@@ -241,23 +315,8 @@ export class CrawlerService extends EventEmitter {
       lastCrawlTime.set(domain, Date.now());
       
     } catch (error) {
-      this.logger.error(`Error crawling ${url}:`, (error as Error).message);
-      
-      const crawlError: CrawlError = {
-        url,
-        error: (error instanceof Error) ? error.message : String(error),
-        statusCode:
-          typeof error === 'object' &&
-          error !== null &&
-          'status' in error
-            ? (error as { status?: number }).status
-            : undefined,
-        timestamp: new Date(),
-        depth: crawlState.currentDepth,
-      };
-      
-      errors.push(crawlError);
-      this.emit('crawl-error', crawlError);
+      clearTimeout(timeoutId);
+      throw error;
     }
   }
 
@@ -273,7 +332,7 @@ export class CrawlerService extends EventEmitter {
   ): CrawledPage {
     // Basic HTML parsing using regex (not as accurate as DOM parsing, but works)
     const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-    const title = titleMatch ? titleMatch[1].trim() : undefined;
+    const title = titleMatch ? this.decodeHtmlEntities(titleMatch[1].trim()) : undefined;
 
     // Extract links
     const linkMatches = html.match(/<a[^>]+href=["']([^"']+)["'][^>]*>/gi) || [];
@@ -283,47 +342,67 @@ export class CrawlerService extends EventEmitter {
         return hrefMatch ? hrefMatch[1] : null;
       })
       .filter((link): link is string => link !== null)
-      .map(link => resolveUrl(url, link))
-      .filter(link => isValidUrl(link))
-      .map(link => normalizeUrl(link));
+      .map(link => {
+        try {
+          return normalizeUrl(resolveUrl(url, link));
+        } catch {
+          return null;
+        }
+      })
+      .filter((link): link is string => link !== null && isValidUrl(link));
 
     // Extract images
-    const imageMatches = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi) || [];
+    const imageMatches = html.match(/<img[^>]*src=["']([^"']+)["'][^>]*>/gi) || [];
     const images = imageMatches
       .map(match => {
         const srcMatch = match.match(/src=["']([^"']+)["']/i);
-        return srcMatch ? resolveUrl(url, srcMatch[1]) : null;
+        if (!srcMatch) return null;
+        try {
+          return resolveUrl(url, srcMatch[1]);
+        } catch {
+          return null;
+        }
       })
-      .filter((x): x is string => x !== null)
+      .filter((x): x is string => x !== null);
 
     // Extract scripts
-    const scriptMatches = html.match(/<script[^>]+src=["']([^"']+)["'][^>]*>/gi) || [];
+    const scriptMatches = html.match(/<script[^>]*src=["']([^"']+)["'][^>]*>/gi) || [];
     const scripts = scriptMatches
       .map(match => {
         const srcMatch = match.match(/src=["']([^"']+)["']/i);
-        return srcMatch ? resolveUrl(url, srcMatch[1]) : null;
+        if (!srcMatch) return null;
+        try {
+          return resolveUrl(url, srcMatch[1]);
+        } catch {
+          return null;
+        }
       })
-      .filter((x): x is string => x !== null)
+      .filter((x): x is string => x !== null);
 
     // Extract stylesheets
-    const cssMatches = html.match(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi) || [];
+    const cssMatches = html.match(/<link[^>]*rel=["']stylesheet["'][^>]*>/gi) || [];
     const stylesheets = cssMatches
       .map(match => {
         const hrefMatch = match.match(/href=["']([^"']+)["']/i);
-        return hrefMatch ? resolveUrl(url, hrefMatch[1]) : null;
+        if (!hrefMatch) return null;
+        try {
+          return resolveUrl(url, hrefMatch[1]);
+        } catch {
+          return null;
+        }
       })
-      .filter((x): x is string => x !== null)
+      .filter((x): x is string => x !== null);
 
     // Extract meta tags
     const meta: any = {};
-    const metaMatches = html.match(/<meta[^>]+>/gi) || [];
+    const metaMatches = html.match(/<meta[^>]*>/gi) || [];
     metaMatches.forEach(match => {
       const nameMatch = match.match(/name=["']([^"']+)["']/i) || match.match(/property=["']([^"']+)["']/i);
-      const contentMatch = match.match(/content=["']([^"']+)["']/i);
+      const contentMatch = match.match(/content=["']([^"']*)["']/i);
       
       if (nameMatch && contentMatch) {
         const name = nameMatch[1].toLowerCase();
-        const content = contentMatch[1];
+        const content = this.decodeHtmlEntities(contentMatch[1]);
         
         switch (name) {
           case 'description':
@@ -344,14 +423,24 @@ export class CrawlerService extends EventEmitter {
           case 'og:image':
             meta.ogImage = content;
             break;
+          case 'twitter:title':
+            meta.twitterTitle = content;
+            break;
+          case 'twitter:description':
+            meta.twitterDescription = content;
+            break;
         }
       }
     });
 
     // Extract canonical URL
-    const canonicalMatch = html.match(/<link[^>]+rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i);
+    const canonicalMatch = html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i);
     if (canonicalMatch) {
-      meta.canonical = canonicalMatch[1];
+      try {
+        meta.canonical = resolveUrl(url, canonicalMatch[1]);
+      } catch {
+        // Invalid canonical URL, ignore
+      }
     }
 
     // Extract headings
@@ -359,7 +448,7 @@ export class CrawlerService extends EventEmitter {
     for (let i = 1; i <= 6; i++) {
       const headingMatches = html.match(new RegExp(`<h${i}[^>]*>([^<]*)</h${i}>`, 'gi')) || [];
       headings[`h${i}`] = headingMatches
-        .map(match => match.replace(/<[^>]*>/g, '').trim())
+        .map(match => this.decodeHtmlEntities(match.replace(/<[^>]*>/g, '').trim()))
         .filter(Boolean);
     }
 
@@ -384,9 +473,21 @@ export class CrawlerService extends EventEmitter {
     };
   }
 
-  // Copy all the utility methods from the main service
-  private addDiscoveredUrls(links: string[], parentUrl: string, crawlState: any): void {
-    const { job, urlQueue, processedUrls, currentDepth } = crawlState;
+  private decodeHtmlEntities(text: string): string {
+    const entities: { [key: string]: string } = {
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&nbsp;': ' ',
+    };
+    
+    return text.replace(/&[#\w]+;/g, (entity) => entities[entity] || entity);
+  }
+
+  private addDiscoveredUrls(links: string[], parentUrl: string, crawlState: CrawlState): void {
+    const { job, urlQueue, processedUrls } = crawlState;
 
     links.forEach(link => {
       // Skip if already processed or queued
@@ -394,23 +495,37 @@ export class CrawlerService extends EventEmitter {
         return;
       }
 
+      // Check if we've reached the page limit
+      if (processedUrls.size + urlQueue.size >= job.maxPages) {
+        return;
+      }
+
       // Check depth limit
       const linkDepth = getUrlDepth(link, job.urls[0]);
-      if (linkDepth >= job.maxDepth) {
+      if (linkDepth > job.maxDepth) {
         return;
       }
 
       // Check domain restrictions
-      if (!isAllowedDomain(link, job.allowedDomains)) {
+      if (job.allowedDomains && !isAllowedDomain(link, job.allowedDomains)) {
+        this.logger.debug(`URL ${link} filtered out - not in allowed domains: ${job.allowedDomains.join(', ')}`);
         return;
       }
 
-      // Check include/exclude patterns
+      // Check exclude patterns
       if (job.excludePatterns && matchesPatterns(link, job.excludePatterns)) {
+        this.logger.debug(`URL ${link} filtered out - matches exclude pattern`);
         return;
       }
 
+      // Check include patterns
       if (job.includePatterns && !matchesPatterns(link, job.includePatterns)) {
+        this.logger.debug(`URL ${link} filtered out - doesn't match include pattern`);
+        return;
+      }
+
+      // Skip non-HTTP(S) URLs
+      if (!link.startsWith('http://') && !link.startsWith('https://')) {
         return;
       }
 
@@ -442,8 +557,12 @@ export class CrawlerService extends EventEmitter {
       throw new Error('At least one URL must be provided');
     }
 
-    if (job.maxDepth < 0 || job.maxPages < 1) {
-      throw new Error('Invalid depth or pages limit');
+    if (job.maxDepth !== undefined && job.maxDepth < 0) {
+      throw new Error('maxDepth cannot be negative');
+    }
+
+    if (job.maxPages !== undefined && job.maxPages < 1) {
+      throw new Error('maxPages must be at least 1');
     }
 
     job.urls.forEach(url => {
@@ -453,7 +572,7 @@ export class CrawlerService extends EventEmitter {
     });
   }
 
-  private emitProgress(crawlState: any): void {
+  private emitProgress(crawlState: CrawlState): void {
     const { jobId, startTime, urlQueue, processedUrls, errors } = crawlState;
     
     const progress: CrawlProgress = {
@@ -468,7 +587,7 @@ export class CrawlerService extends EventEmitter {
     this.emit('crawl-progress', progress);
   }
 
-  private generateCrawlResult(crawlState: any, completed: boolean): CrawlResult {
+  private generateCrawlResult(crawlState: CrawlState, completed: boolean): CrawlResult {
     const { jobId, startTime, crawledPages, errors } = crawlState;
     const endTime = new Date();
     
@@ -479,7 +598,7 @@ export class CrawlerService extends EventEmitter {
       progress: {
         totalUrls: crawledPages.size + errors.length,
         processedUrls: crawledPages.size,
-        pendingUrls: 0,
+        pendingUrls: crawlState.urlQueue.size,
         errorUrls: errors.length,
         currentDepth: crawlState.currentDepth,
         startTime,
@@ -518,6 +637,11 @@ export class CrawlerService extends EventEmitter {
   }
 
   private async cleanup(): Promise<void> {
+    // Cancel all active crawls
+    for (const jobId of this.activeCrawls.keys()) {
+      this.cancelCrawl(jobId);
+    }
+    
     this.robotsUtil.clearCache();
     this.activeCrawls.clear();
     this.logger.log('🔄 Fallback crawler cleaned up');
@@ -535,5 +659,39 @@ export class CrawlerService extends EventEmitter {
       defaultOptions: this.defaultOptions,
       mode: 'fallback',
     };
+  }
+}
+
+/**
+ * Simple semaphore implementation for controlling concurrency
+ */
+class Semaphore {
+  private permits: number;
+  private waitQueue: (() => void)[] = [];
+
+  constructor(permits: number) {
+    this.permits = permits;
+  }
+
+  async acquire(): Promise<void> {
+    if (this.permits > 0) {
+      this.permits--;
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve) => {
+      this.waitQueue.push(resolve);
+    });
+  }
+
+  release(): void {
+    this.permits++;
+    if (this.waitQueue.length > 0) {
+      const next = this.waitQueue.shift();
+      if (next) {
+        this.permits--;
+        next();
+      }
+    }
   }
 }

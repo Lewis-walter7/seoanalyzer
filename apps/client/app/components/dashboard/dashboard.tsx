@@ -34,6 +34,7 @@ export default function Dashboard() {
     error
   });
 
+  console.log(selectedProject)
   const handleTabClick = (tab: 'projects' | 'tools') => {
     if (tab === 'tools') {
       router.push('/tools');
@@ -112,8 +113,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-full bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto p-4 sm:p-6 min-h-full">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="container mx-auto p-4 sm:p-6 min-h-screen">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 lg:mb-8 space-y-4 lg:space-y-0">
           <div className="text-center lg:text-left">

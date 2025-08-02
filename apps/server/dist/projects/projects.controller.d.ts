@@ -14,4 +14,7 @@ export declare class ProjectsController {
         status: string;
         crawlJobId?: string;
     }>;
+    getProjectAudits(user: AuthenticatedUser, projectId: string): Promise<{
+        audits: import("./project.service").AuditResponse[];
+    }>;
 }

@@ -109,7 +109,7 @@ const AuditResultsLayout = React.forwardRef<HTMLDivElement, AuditResultsLayoutPr
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/project/${project.id}`}>
+              <BreadcrumbLink href={`/?project=${project.id}`}>
                 {project.name}
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -123,7 +123,7 @@ const AuditResultsLayout = React.forwardRef<HTMLDivElement, AuditResultsLayoutPr
         {/* Back Button */}
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/project/${project.id}`}>
+            <Link href={`/?project=${project.id}`}>
               <ArrowLeftIcon className="h-4 w-4" />
               Back to Project
             </Link>

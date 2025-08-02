@@ -65,7 +65,8 @@ function authenticateJWT(req, res, next) {
             next();
         })
             .catch((error) => {
-            console.error('Error fetching user:', error);
+            // Log error for debugging but with structured logging
+            console.error('[AuthMiddleware] User fetch error:', error.message);
             res.status(500).json({
                 error: 'Internal server error',
                 message: 'Failed to authenticate user',
@@ -73,7 +74,7 @@ function authenticateJWT(req, res, next) {
         });
     }
     catch (error) {
-        console.error('JWT verification error:', error);
+        console.error('[AuthMiddleware] Token verification error:', error.message);
         res.status(401).json({
             error: 'Access denied',
             message: 'Invalid token',
@@ -108,13 +109,13 @@ function optionalAuthenticateJWT(req, res, next) {
             next();
         })
             .catch((error) => {
-            console.error('Error fetching user:', error);
+            console.debug('[AuthMiddleware] Optional auth - user fetch error:', error.message);
             // Continue without user on error
             next();
         });
     }
     catch (error) {
-        console.error('JWT verification error:', error);
+        console.debug('[AuthMiddleware] Optional auth - token verification error:', error.message);
         // Continue without user on error
         next();
     }
@@ -156,7 +157,7 @@ async function fastifyAuthenticateJWT(request, reply) {
         request.token = token;
     }
     catch (error) {
-        console.error('JWT verification error:', error);
+        console.error('[AuthMiddleware] Fastify token verification error:', error.message);
         reply.status(401).send({
             error: 'Access denied',
             message: 'Invalid token',
@@ -187,7 +188,7 @@ async function fastifyOptionalAuthenticateJWT(request, reply) {
         }
     }
     catch (error) {
-        console.error('JWT verification error:', error);
+        console.debug('[AuthMiddleware] Fastify optional auth - token verification error:', error.message);
         // Continue without user on error
     }
 }

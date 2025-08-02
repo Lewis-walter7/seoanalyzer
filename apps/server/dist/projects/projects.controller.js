@@ -44,6 +44,9 @@ let ProjectsController = class ProjectsController {
     async analyzeProject(user, projectId) {
         return this.projectService.analyzeProject(user.id, projectId);
     }
+    async getProjectAudits(user, projectId) {
+        return this.projectService.getProjectAudits(user.id, projectId);
+    }
 };
 exports.ProjectsController = ProjectsController;
 __decorate([
@@ -103,6 +106,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "analyzeProject", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.Get)(':id/audits'),
+    __param(0, (0, user_decorator_1.User)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], ProjectsController.prototype, "getProjectAudits", null);
 exports.ProjectsController = ProjectsController = __decorate([
     (0, common_1.Controller)('v1/projects'),
     __metadata("design:paramtypes", [project_service_1.ProjectService])

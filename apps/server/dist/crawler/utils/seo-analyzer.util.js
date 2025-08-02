@@ -92,10 +92,12 @@ class SeoAnalyzer {
             // Performance metrics (will be set from crawler data)
             loadTime: undefined,
             pageSize: html.length,
-            // Overall scores (placeholder - could be calculated based on other metrics)
-            seoScore: undefined,
-            performanceScore: undefined,
-            accessibilityScore: undefined,
+            // Overall scores (calculated based on other metrics)
+            seoScore: this.calculateSeoScore(title, metaDescription, h1Count, linkAnalysis, imageAnalysis, technicalAnalysis),
+            performanceScore: this.calculatePerformanceScore(html.length, undefined), // loadTime passed separately
+            accessibilityScore: this.calculateAccessibilityScore(imageAnalysis, langAttribute, technicalAnalysis),
+            // Initialize issues array
+            issues: [],
         };
     }
     extractTagContent(html, tag) {
@@ -244,6 +246,157 @@ class SeoAnalyzer {
         const textLength = textContent.length;
         const htmlLength = html.length;
         return htmlLength > 0 ? textLength / htmlLength : 0;
+    }
+    /**
+     * Calculate SEO score based on various SEO factors (0-100)
+     */
+    calculateSeoScore(title, metaDescription, h1Count, linkAnalysis, imageAnalysis, technicalAnalysis) {
+        let score = 0;
+        let maxScore = 0;
+        // Title tag (20 points)
+        maxScore += 20;
+        if (title) {
+            if (title.length >= 30 && title.length <= 60) {
+                score += 20;
+            }
+            else if (title.length > 0) {
+                score += 10;
+            }
+        }
+        // Meta description (15 points)
+        maxScore += 15;
+        if (metaDescription) {
+            if (metaDescription.length >= 120 && metaDescription.length <= 160) {
+                score += 15;
+            }
+            else if (metaDescription.length > 0) {
+                score += 8;
+            }
+        }
+        // H1 tag (15 points)
+        maxScore += 15;
+        if (h1Count === 1) {
+            score += 15;
+        }
+        else if (h1Count && h1Count > 1) {
+            score += 5;
+        }
+        // Images optimization (10 points)
+        maxScore += 10;
+        if (imageAnalysis) {
+            if (imageAnalysis.totalImages === 0) {
+                score += 10; // No images to optimize
+            }
+            else {
+                const altRatio = imageAnalysis.imagesWithAlt / imageAnalysis.totalImages;
+                score += Math.round(altRatio * 10);
+            }
+        }
+        // Technical SEO (25 points)
+        maxScore += 25;
+        if (technicalAnalysis) {
+            if (technicalAnalysis.hasViewport)
+                score += 5;
+            if (technicalAnalysis.hasCharset)
+                score += 5;
+            if (technicalAnalysis.isHttps)
+                score += 10;
+            if (technicalAnalysis.hasSitemapReference)
+                score += 5;
+        }
+        // Link structure (15 points)
+        maxScore += 15;
+        if (linkAnalysis) {
+            const totalLinks = linkAnalysis.internalLinksCount + linkAnalysis.externalLinksCount;
+            if (totalLinks > 0) {
+                if (linkAnalysis.internalLinksCount > 0)
+                    score += 8;
+                if (linkAnalysis.externalLinksCount > 0 && linkAnalysis.externalLinksCount <= 10)
+                    score += 7;
+            }
+        }
+        return Math.round((score / maxScore) * 100);
+    }
+    /**
+     * Calculate performance score based on load time and page size (0-100)
+     */
+    calculatePerformanceScore(pageSize, loadTime) {
+        let score = 100;
+        // Page size scoring (50% of total score)
+        if (pageSize) {
+            if (pageSize > 3 * 1024 * 1024) { // 3MB+
+                score -= 25;
+            }
+            else if (pageSize > 1.5 * 1024 * 1024) { // 1.5MB+
+                score -= 15;
+            }
+            else if (pageSize > 1024 * 1024) { // 1MB+
+                score -= 10;
+            }
+            else if (pageSize > 500 * 1024) { // 500KB+
+                score -= 5;
+            }
+        }
+        // Load time scoring (50% of total score)
+        if (loadTime) {
+            if (loadTime > 5000) { // 5s+
+                score -= 25;
+            }
+            else if (loadTime > 3000) { // 3s+
+                score -= 15;
+            }
+            else if (loadTime > 2000) { // 2s+
+                score -= 10;
+            }
+            else if (loadTime > 1000) { // 1s+
+                score -= 5;
+            }
+        }
+        return Math.max(0, score);
+    }
+    /**
+     * Calculate accessibility score based on various accessibility factors (0-100)
+     */
+    calculateAccessibilityScore(imageAnalysis, langAttribute, technicalAnalysis) {
+        let score = 0;
+        let maxScore = 0;
+        // Alt text for images (40 points)
+        maxScore += 40;
+        if (imageAnalysis) {
+            if (imageAnalysis.totalImages === 0) {
+                score += 40; // No images to check
+            }
+            else {
+                const altRatio = imageAnalysis.imagesWithAlt / imageAnalysis.totalImages;
+                score += Math.round(altRatio * 40);
+            }
+        }
+        // Language attribute (30 points)
+        maxScore += 30;
+        if (langAttribute) {
+            score += 30;
+        }
+        // Viewport meta tag (20 points)
+        maxScore += 20;
+        if (technicalAnalysis && technicalAnalysis.hasViewport) {
+            score += 20;
+        }
+        // Character encoding (10 points)
+        maxScore += 10;
+        if (technicalAnalysis && technicalAnalysis.hasCharset) {
+            score += 10;
+        }
+        return Math.round((score / maxScore) * 100);
+    }
+    /**
+     * Update performance score with actual load time data
+     */
+    updatePerformanceScore(auditData, loadTime) {
+        return {
+            ...auditData,
+            loadTime,
+            performanceScore: this.calculatePerformanceScore(auditData.pageSize, loadTime)
+        };
     }
 }
 exports.SeoAnalyzer = SeoAnalyzer;

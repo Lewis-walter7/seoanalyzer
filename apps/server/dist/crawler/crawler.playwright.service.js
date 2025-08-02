@@ -23,11 +23,13 @@ let CrawlerPlaywrightService = CrawlerPlaywrightService_1 = class CrawlerPlaywri
     activeCrawls = new Map();
     defaultOptions = {
         concurrency: 5,
-        defaultUserAgent: 'SEO-Analyzer-Bot/1.0 (+https://seo-analyzer.com/bot)',
+        defaultUserAgent: 'Mozilla/5.0 (compatible; SEO-Analyzer-Bot/1.0; +https://seo-analyzer.com/bot)',
         defaultTimeout: 30000,
         defaultRetries: 3,
         respectRobotsTxt: true,
         defaultCrawlDelay: 1000,
+        defaultRenderTime: 5000, // Max render time in milliseconds
+        defaultMaxPages: 1000,
     };
     constructor() {
         super();
@@ -127,7 +129,7 @@ let CrawlerPlaywrightService = CrawlerPlaywrightService_1 = class CrawlerPlaywri
         try {
             if (job.respectRobotsTxt !== false && this.defaultOptions.respectRobotsTxt) {
                 const userAgent = job.userAgent || this.defaultOptions.defaultUserAgent;
-                const isAllowed = await this.robotsUtil.isAllowed(url, userAgent);
+                const isAllowed = await this.robotsUtil.isAllowed(url, userAgent, job.allowedPaths);
                 if (!isAllowed) {
                     this.logger.debug(`URL blocked by robots.txt: ${url}`);
                     return;
@@ -140,14 +142,22 @@ let CrawlerPlaywrightService = CrawlerPlaywrightService_1 = class CrawlerPlaywri
             }
             await this.respectCrawlDelay(url, domainDelays, lastCrawlTime, job.crawlDelay);
             page = await browser.newPage();
+            const userAgent = job.userAgent || this.defaultOptions.defaultUserAgent;
             await page.setExtraHTTPHeaders({
-                'User-Agent': job.userAgent || this.defaultOptions.defaultUserAgent
+                'User-Agent': userAgent
             });
             const startTime = Date.now();
-            const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: job.timeout || this.defaultOptions.defaultTimeout });
+            const response = await page.goto(url, {
+                waitUntil: 'domcontentloaded',
+                timeout: job.timeout || this.defaultOptions.defaultTimeout
+            });
             if (!response) {
                 throw new Error('Failed to load page');
             }
+            // Wait for additional rendering time for dynamic content
+            const maxRenderTime = job.renderTime || this.defaultOptions.defaultRenderTime;
+            await page.waitForTimeout(maxRenderTime);
+            // Snapshot HTML after rendering
             const html = await page.content();
             const title = await page.title();
             const loadTime = Date.now() - startTime;
@@ -178,7 +188,9 @@ let CrawlerPlaywrightService = CrawlerPlaywrightService_1 = class CrawlerPlaywri
                 timestamp: new Date(),
             };
             crawledPages.set(url, crawledPage);
-            this.addDiscoveredUrls([], url, crawlState);
+            // Extract links from the rendered HTML and add them to the crawl queue
+            const discoveredLinks = this.extractLinksFromHtml(html, url);
+            this.addDiscoveredUrls(discoveredLinks, url, crawlState);
             this.emit('page-crawled', crawledPage);
             const domain = (0, url_util_1.extractDomain)(url);
             lastCrawlTime.set(domain, Date.now());
@@ -215,6 +227,10 @@ let CrawlerPlaywrightService = CrawlerPlaywrightService_1 = class CrawlerPlaywri
         if (!job.urls || job.urls.length === 0) {
             throw new Error('No URLs provided for crawling');
         }
+        // Set default maxPages if not specified
+        if (!job.maxPages) {
+            job.maxPages = this.defaultOptions.defaultMaxPages;
+        }
         if (job.maxPages && job.maxPages <= 0) {
             throw new Error('maxPages must be greater than 0');
         }
@@ -230,6 +246,15 @@ let CrawlerPlaywrightService = CrawlerPlaywrightService_1 = class CrawlerPlaywri
     }
     generateCrawlResult(crawlState, completed) {
         const { jobId, job, startTime, crawledPages, errors, progress } = crawlState;
+        const stats = {
+            avgLoadTime: this.calculateAverageLoadTime(crawledPages),
+            successRate: crawledPages.size / (crawledPages.size + errors.length),
+            crawlDuration: Date.now() - startTime.getTime(),
+        };
+        const performanceScore = this.calculatePerformanceScore(stats);
+        stats.successRate = performanceScore;
+        this.logger.log(`Crawl Performance Score: ${performanceScore.toFixed(2)}`);
+        this.logger.log(`Crawl Stats - Success Rate: ${(stats.successRate * 100).toFixed(1)}%, Avg Load Time: ${stats.avgLoadTime.toFixed(0)}ms, Duration: ${(stats.crawlDuration / 1000).toFixed(1)}s`);
         return {
             jobId,
             startTime,
@@ -238,12 +263,17 @@ let CrawlerPlaywrightService = CrawlerPlaywrightService_1 = class CrawlerPlaywri
             progress,
             pages: Array.from(crawledPages.values()),
             errors,
-            stats: {
-                avgLoadTime: this.calculateAverageLoadTime(crawledPages),
-                successRate: crawledPages.size / (crawledPages.size + errors.length),
-                crawlDuration: Date.now() - startTime.getTime(),
-            },
+            stats,
         };
+    }
+    calculatePerformanceScore(stats) {
+        const { avgLoadTime, successRate, crawlDuration } = stats;
+        let score = 100;
+        // Deduct points for higher load times and lower success rates
+        score -= (avgLoadTime / 1000) * 5; // 5 points deduction per second
+        score -= (1 - successRate) * 50; // Up to 50 points deduction
+        // Ensure the score is within bounds
+        return Math.max(0, Math.min(100, score));
     }
     calculateAverageLoadTime(crawledPages) {
         if (crawledPages.size === 0)
@@ -300,6 +330,12 @@ let CrawlerPlaywrightService = CrawlerPlaywrightService_1 = class CrawlerPlaywri
                 this.logger.debug(`Failed to process discovered URL: ${link}`, error);
             }
         }
+    }
+    /**
+     * Extract links from HTML content using SEO-focused filtering
+     */
+    extractLinksFromHtml(html, baseUrl) {
+        return (0, url_util_1.extractSeoUrls)(html, baseUrl);
     }
     async cleanup() {
         this.robotsUtil.clearCache();

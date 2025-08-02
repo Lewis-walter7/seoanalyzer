@@ -1,0 +1,99 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/server
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: apps/server/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate Prisma Client
+      run: npx prisma generate
+
+    - name: Run tests
+      run: npm test
+      env:
+        DATABASE_URL: mongodb://localhost:27017/seoanalyzer_test
+        NODE_ENV: test
+        INTASEND_PUBLISHABLE_KEY: test_pub_key
+        INTASEND_SECRET_KEY: test_secret_key
+        INTASEND_WEBHOOK_SECRET: test_webhook_secret
+        INTASEND_TEST_MODE: true
+
+    - name: Run cascade tests specifically
+      run: npx jest src/prisma/cascade.spec.ts --verbose
+      env:
+        DATABASE_URL: mongodb://localhost:27017/seoanalyzer_test
+        NODE_ENV: test
+        INTASEND_PUBLISHABLE_KEY: test_pub_key
+        INTASEND_SECRET_KEY: test_secret_key
+        INTASEND_WEBHOOK_SECRET: test_webhook_secret
+        INTASEND_TEST_MODE: true
+
+    - name: Run test coverage
+      run: npm run test:cov
+      env:
+        DATABASE_URL: mongodb://localhost:27017/seoanalyzer_test
+        NODE_ENV: test
+        INTASEND_PUBLISHABLE_KEY: test_pub_key
+        INTASEND_SECRET_KEY: test_secret_key
+        INTASEND_WEBHOOK_SECRET: test_webhook_secret
+        INTASEND_TEST_MODE: true
+
+  test-client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/client
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: apps/client/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests (if available)
+      run: npm test --if-present
+      env:
+        CI: true

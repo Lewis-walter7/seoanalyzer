@@ -9,7 +9,9 @@ export interface CrawlJob {
   disableJavaScript?: boolean;
   respectRobotsTxt?: boolean;
   crawlDelay?: number; // in milliseconds
+  renderTime?: number; // in milliseconds - max time to wait for JS rendering
   allowedDomains?: string[];
+  allowedPaths?: string[]; // Paths that are explicitly allowed even if blocked by robots.txt
   excludePatterns?: string[];
   includePatterns?: string[];
   customHeaders?: Record<string, string>;
@@ -19,6 +21,17 @@ export interface CrawlJob {
   };
   timeout?: number; // in milliseconds
   retries?: number;
+  concurrency?: number; // Add missing concurrency property
+}
+
+// Define the headings interface separately for better type safety
+export interface PageHeadings {
+  h1: string[];
+  h2: string[];
+  h3: string[];
+  h4: string[];
+  h5: string[];
+  h6: string[];
 }
 
 export interface CrawledPage {
@@ -45,15 +58,10 @@ export interface CrawledPage {
     ogTitle?: string;
     ogDescription?: string;
     ogImage?: string;
+    twitterTitle?: string; // Add missing Twitter meta properties
+    twitterDescription?: string;
   };
-  headings: {
-    h1: string[];
-    h2: string[];
-    h3: string[];
-    h4: string[];
-    h5: string[];
-    h6: string[];
-  };
+  headings: PageHeadings; // Use the specific interface
   errors?: string[];
   timestamp: Date;
 }
@@ -81,6 +89,7 @@ export interface CrawlStats {
   avgLoadTime: number;
   successRate: number;
   crawlDuration: number;
+  performanceScore?: number; // Optional performance score (0-100)
 }
 
 export interface CrawlResult {
@@ -110,6 +119,7 @@ export interface CrawlerOptions {
   defaultRetries?: number;
   respectRobotsTxt?: boolean;
   defaultCrawlDelay?: number;
+  defaultMaxPages?: number;
 }
 
 export interface CrawlerEvents {

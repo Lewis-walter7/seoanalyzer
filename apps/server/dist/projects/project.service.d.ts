@@ -28,6 +28,32 @@ export interface ProjectResponse {
     createdAt: Date;
     updatedAt: Date;
 }
+export interface SeoAuditPage {
+    id: string;
+    url: string;
+    title: string | null;
+    titleTag: string | null;
+    metaDescription: string | null;
+    h1Count: number;
+    imgMissingAlt: number;
+    totalLinks: number;
+    performanceScore: number | null;
+    seoScore?: number | null;
+    accessibilityScore?: number | null;
+    internalLinksCount: number;
+    externalLinksCount: number;
+    brokenLinksCount: number;
+    loadTime?: number | null;
+    pageSize?: number | null;
+    hasCanonical: boolean;
+    isIndexable: boolean;
+    crawledAt: Date;
+}
+export interface AuditResponse {
+    id: string;
+    createdAt: Date;
+    pages: SeoAuditPage[];
+}
 export declare class ProjectService {
     private readonly prisma;
     private readonly subscriptionService;
@@ -60,6 +86,12 @@ export declare class ProjectService {
         message: string;
         status: string;
         crawlJobId?: string;
+    }>;
+    /**
+     * Get audits for a specific project
+     */
+    getProjectAudits(userId: string, projectId: string): Promise<{
+        audits: AuditResponse[];
     }>;
     /**
      * Record usage for project operations

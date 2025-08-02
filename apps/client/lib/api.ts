@@ -178,9 +178,6 @@ export const api = {
     return externalApi.get('/subscription/me');
   },
 
-  async getSubscriptionPlans() {
-    return externalApi.get('/subscription/plans');
-  },
 
   async createSubscription(planId: string) {
     return externalApi.post('/subscription', { planId });

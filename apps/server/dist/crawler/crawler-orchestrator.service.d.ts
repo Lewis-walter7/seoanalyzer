@@ -25,4 +25,12 @@ export declare class CrawlerOrchestratorService implements OnModuleInit {
     private handleCrawlError;
     private handleCrawlFinished;
     private storePagesFromResult;
+    /**
+     * Update project details after crawl completion
+     */
+    private updateProjectDetailsAfterCrawl;
+    /**
+     * Extract domain variations to allow crawling of all domain formats
+     */
+    private extractDomainVariations;
 }

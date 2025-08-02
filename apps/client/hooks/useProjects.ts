@@ -333,6 +333,56 @@ export const useProjects = () => {
     }
   }, [isAuthenticated, state.projects, state.selectedProject, updateUrlWithProject]);
 
+  // Update cached project with new data (useful after crawl completion)
+  const updateCachedProject = useCallback(async (projectId: string, updates: Partial<Project>): Promise<{ success: boolean; error?: string }> => {
+    if (!isAuthenticated) {
+      return { success: false, error: 'You must be logged in to update a project' };
+    }
+
+    try {
+      // Update project on backend if needed
+      if (Object.keys(updates).length > 0) {
+        await api.updateBackendProject(projectId, updates);
+      }
+
+      // Update local state
+      setState(prev => {
+        const updatedProjects = prev.projects.map(project => 
+          project.id === projectId 
+            ? { ...project, ...updates, updatedAt: new Date() }
+            : project
+        );
+        
+        const updatedSelectedProject = prev.selectedProject?.id === projectId
+          ? { ...prev.selectedProject, ...updates, updatedAt: new Date() }
+          : prev.selectedProject;
+
+        return {
+          ...prev,
+          projects: updatedProjects,
+          selectedProject: updatedSelectedProject
+        };
+      });
+
+      // Update cache
+      const currentCached = getCachedProjects();
+      if (currentCached) {
+        const updatedProjects = currentCached.projects.map(project => 
+          project.id === projectId 
+            ? { ...project, ...updates, updatedAt: new Date() }
+            : project
+        );
+        setCachedProjects(updatedProjects);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update cached project:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update project';
+      return { success: false, error: errorMessage };
+    }
+  }, [isAuthenticated]);
+
   // Refresh projects (force fetch)
   const refreshProjects = useCallback(() => {
     return fetchProjects(true);
@@ -364,6 +414,7 @@ export const useProjects = () => {
     selectProject,
     createProject,
     deleteProject,
+    updateCachedProject,
     refreshProjects,
     clearCache,
     fetchProjects

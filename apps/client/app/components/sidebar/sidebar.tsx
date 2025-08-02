@@ -99,6 +99,9 @@ export default function Sidebar({ open, selectedProject }: SidebarProps) {
           <Link
             key={name}
             href={disabled ? '#' : href}
+            aria-disabled={disabled ? 'true' : undefined}
+            tabIndex={disabled ? -1 : undefined}
+            onClick={disabled ? (e) => e.preventDefault() : undefined}
             className={`flex items-center gap-2 lg:gap-3 px-2 lg:px-3 py-2 lg:py-2 rounded text-sm transition-colors ${
               disabled
                 ? 'cursor-not-allowed text-gray-400 dark:text-gray-600'

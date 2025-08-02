@@ -7,6 +7,7 @@ import { Badge } from './ui/badge';
 import { Check, Loader2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/components/providers/session-provider';
+import { staticSubscriptionPlans } from '@/libs/subscriptionPlans';
 
 interface SubscriptionPlan {
   id: string;
@@ -62,49 +63,49 @@ interface SubscriptionPlansProps {
 export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }: SubscriptionPlansProps) {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const plans = staticSubscriptionPlans.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
-  const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
 
-  // Fetch plans and current subscription
+  // Fetch current subscription
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch plans
-        const plansResponse = await fetch('/api/subscription/plans');
-        if (plansResponse.ok) {
-          const plansData = await plansResponse.json();
-          setPlans(plansData);
-        }
-
-        // Fetch current subscription if user is logged in
-        if (user) {
+    const fetchCurrentSubscription = async () => {
+      // Only fetch current subscription if user is logged in
+      if (user) {
+        try {
           const subscriptionResponse = await fetch('/api/subscription/me');
           if (subscriptionResponse.ok) {
             const subscriptionData = await subscriptionResponse.json();
             setCurrentSubscription(subscriptionData);
           }
+        } catch (subscriptionError) {
+          // Silently handle subscription fetch errors for better UX
+          console.log('Could not fetch subscription data:', subscriptionError);
         }
-      } catch (error) {
-        console.error('Error fetching subscription data:', error);
-        toast.error('Failed to load subscription data');
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchData();
+    fetchCurrentSubscription();
   }, [user]);
 
   const handlePlanSelect = async (plan: SubscriptionPlan) => {
-    if (user) {
+    // If user is not authenticated, redirect to sign in
+    if (!user) {
       toast.error('Please sign in to upgrade your plan');
+      // Redirect to login page with return URL
+      window.location.href = `/login?callbackUrl=${encodeURIComponent('/pricing')}`;
       return;
     }
 
+    // If user is already on this plan
     if (currentSubscription?.plan?.id === plan.id) {
       toast.info('You are already on this plan');
+      return;
+    }
+
+    // If it's a free plan, handle differently
+    if (plan.priceMonthly === 0) {
+      toast.info('You can start using the free plan immediately after signing in');
       return;
     }
 
@@ -118,7 +119,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
         },
         body: JSON.stringify({
           planId: plan.id,
-          billingCycle: 'MONTHLY',
+          billingCycle: billingCycle,
         }),
       });
 
@@ -195,17 +196,6 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
 
   const isPlanActive = (planId: string) => currentSubscription?.plan?.id === planId;
   const isPlanLoading = (planId: string) => loadingPlan === planId;
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p>Loading subscription plans...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -302,7 +292,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
               <Button
                 className="w-full"
                 onClick={() => handlePlanSelect(plan)}
-                //disabled={isPlanActive(plan.id) || isPlanLoading(plan.id) || user}
+                disabled={isPlanActive(plan.id) || isPlanLoading(plan.id)}
                 variant={plan.isPopular ? 'default' : 'outline'}
               >
                 {isPlanLoading(plan.id) ? (
@@ -313,17 +303,17 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
                 ) : isPlanActive(plan.id) ? (
                   'Current Plan'
                 ) : getCurrentPrice(plan) === 0 ? (
-                  'Get Started'
+                  user ? 'Get Started' : 'Sign Up Free'
                 ) : (
-                  `Upgrade to ${plan.displayName}`
+                  user ? `Upgrade to ${plan.displayName}` : `Choose ${plan.displayName}`
                 )}
               </Button>
               
-              {user && (
+              {/* {!user && (
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  Sign in to upgrade
+                  Sign in required to {getCurrentPrice(plan) === 0 ? 'get started' : 'upgrade'}
                 </p>
-              )}
+              )} */}
             </CardFooter>
           </Card>
         ))}

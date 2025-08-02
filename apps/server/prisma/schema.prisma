@@ -16,13 +16,20 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Crawl tracking fields
+  lastCrawl     DateTime?
+  crawlStatus   CrawlStatus? @default(QUEUED)
+  onPageScore   Float?      // 0-100 average on-page SEO score
+  totalPages    Int?        @default(0)
+  totalIssues   Int?        @default(0)
+
   // Relations
   crawlJobs       CrawlJob[]
   analysisReports AnalysisReport[]
   keywordRankings KeywordRanking[]
   seoIssues       SeoIssue[]
   seoAudits       SeoAudit[]
-  User            User?            @relation(fields: [userId], references: [id])
+  User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?          @db.ObjectId
 
   @@map("projects")

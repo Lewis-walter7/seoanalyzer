@@ -142,30 +142,35 @@ export function isValidUrl(url: string): boolean {
 }
 
 /**
- * Extract all URLs from HTML content
+ * Extract all URLs from HTML content (focuses on href links for crawling)
  */
 export function extractUrls(html: string, baseUrl: string): string[] {
   const urls: string[] = [];
   
-  // Regular expressions to find URLs in href and src attributes
+  // Regular expression to find URLs in href attributes
   const linkRegex = /href=[\"']([^\"']+)[\"']/gi;
-  const srcRegex = /src=[\"']([^\"']+)[\"']/gi;
   
   let match;
   
-  // Extract href URLs
+  // Extract href URLs (main navigation and content links)
   while ((match = linkRegex.exec(html)) !== null) {
-    const url = resolveUrl(baseUrl, match[1]);
-    if (isValidUrl(url)) {
-      urls.push(normalizeUrl(url));
+    const href = match[1].trim();
+    
+    // Skip empty hrefs, anchors, javascript, and mailto links
+    if (!href || href === '#' || href.startsWith('#') || 
+        href.startsWith('javascript:') || href.startsWith('mailto:') ||
+        href.startsWith('tel:') || href.startsWith('sms:')) {
+      continue;
     }
-  }
-  
-  // Extract src URLs (for completeness, though we might filter these out later)
-  while ((match = srcRegex.exec(html)) !== null) {
-    const url = resolveUrl(baseUrl, match[1]);
-    if (isValidUrl(url)) {
-      urls.push(normalizeUrl(url));
+    
+    try {
+      const url = resolveUrl(baseUrl, href);
+      if (isValidUrl(url)) {
+        urls.push(normalizeUrl(url));
+      }
+    } catch (error) {
+      // Skip invalid URLs
+      continue;
     }
   }
   
@@ -173,9 +178,6 @@ export function extractUrls(html: string, baseUrl: string): string[] {
   return Array.from(new Set(urls));
 }
 
-/**
- * Get URL depth relative to a base URL
- */
 export function getUrlDepth(url: string, baseUrl: string): number {
   try {
     const urlObj = new URL(url);
@@ -186,14 +188,344 @@ export function getUrlDepth(url: string, baseUrl: string): number {
       return Infinity;
     }
     
+    // Clean and split paths, removing empty segments
     const urlPath = urlObj.pathname.split('/').filter(segment => segment.length > 0);
     const basePath = baseObj.pathname.split('/').filter(segment => segment.length > 0);
     
-    // Calculate depth as the difference in path segments
-    return Math.max(0, urlPath.length - basePath.length);
+    // For same domain URLs, calculate depth from root
+    // This allows discovery of all pages on the same domain
+    return urlPath.length;
+    
   } catch (error) {
     return Infinity;
   }
+}
+
+/**
+ * Check if URL is SEO-valuable (excludes functional URLs that don't provide SEO value)
+ */
+export function isSeoValueUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname.toLowerCase();
+    const search = urlObj.search.toLowerCase();
+    const protocol = urlObj.protocol.toLowerCase();
+    
+    // Only allow HTTP and HTTPS protocols
+    if (protocol !== 'http:' && protocol !== 'https:') {
+      return false;
+    }
+    
+    const fullUrl = url.toLowerCase();
+    
+    // Exclude functional URLs that don't provide SEO value
+    const functionalPatterns = [
+      // E-commerce functionality (but allow product/category cart pages)
+      '/add-to-cart',
+      '?add-to-cart=',
+      '&add-to-cart=',
+      '/cart/',  // Changed to be more specific - allows /cart-category but not /cart/
+      '/checkout',
+      '/basket/',
+      '/my-account',
+      '/account/',
+      '/user/',
+      '/profile/',
+      
+      // Admin and authentication
+      '/admin',
+      '/wp-admin',
+      '/wp-login',
+      '/login',
+      '/register',
+      '/signup',
+      '/password-reset',
+      '/lost-password',
+      '/forgot-password',
+      
+      // Session and tracking parameters
+      '?action=',
+      '&action=',
+      '?wc-ajax=',
+      '&wc-ajax=',
+      '?_wpnonce=',
+      '&_wpnonce=',
+      '?utm_',
+      '&utm_',
+      '?fbclid=',
+      '&fbclid=',
+      
+      // API endpoints and feeds
+      '/api/',
+      '/wp-json/',
+      '/rest/',
+      '/graphql',
+      '/feed',
+      '/rss',
+      '.xml',
+      '/sitemap',
+      
+      // Search and filtering (often duplicate content)
+      '?s=',
+      '&s=',
+      '?search=',
+      '&search=',
+      '?q=',
+      '&q=',
+      '?orderby=',
+      '&orderby=',
+      '?sort=',
+      '&sort=',
+      '?paged=',
+      '&paged=',
+      '?page=',
+      '&page=',
+      '?filter=',
+      '&filter=',
+      
+      // File downloads (not SEO content)
+      '.pdf',
+      '.doc',
+      '.docx',
+      '.xls',
+      '.xlsx',
+      '.zip',
+      '.rar',
+      '.tar',
+      '.gz',
+      
+      // Media files
+      '.jpg',
+      '.jpeg',
+      '.png',
+      '.gif',
+      '.svg',
+      '.webp',
+      '.ico',
+      '.mp3',
+      '.mp4',
+      '.avi',
+      '.mov',
+      '.wav',
+      
+      // Scripts and styles
+      '.js',
+      '.css',
+      '.min.',
+      
+      // Common functional paths
+      '/wp-content/',
+      '/wp-includes/',
+      '/node_modules/',
+      '/vendor/',
+      '/assets/',
+      '/static/',
+      '/public/',
+      
+      // Tracking and analytics
+      'google-analytics',
+      'facebook.com/tr',
+      'doubleclick',
+      'googletagmanager',
+    ];
+    
+    // Check if URL matches any functional pattern
+    const isFunctional = functionalPatterns.some(pattern => 
+      fullUrl.includes(pattern)
+    );
+    
+    if (isFunctional) {
+      return false;
+    }
+    
+    // For simple paths and root, consider them valuable
+    if (pathname === '/' || pathname.split('/').filter(Boolean).length <= 3) {
+      return true;
+    }
+    
+    // Include common SEO-valuable content patterns
+    const seoValuePatterns = [
+      // Main content pages
+      '/about',
+      '/contact',
+      '/services',
+      '/products',
+      '/blog',
+      '/news',
+      '/articles',
+      '/faq',
+      '/help',
+      '/support',
+      '/privacy',
+      '/terms',
+      '/policy',
+      
+      // E-commerce content (not functionality)
+      '/category/',
+      '/categories/',
+      '/product/',
+      '/products/',
+      '/brand/',
+      '/brands/',
+      '/shop',
+      '/store',
+      '/collection/',
+      '/collections/',
+      
+      // Content management
+      '/page/',
+      '/pages/',
+      '/post/',
+      '/posts/',
+      '/article/',
+      '/articles/',
+      '/content/',
+      
+      // Location and business info
+      '/location/',
+      '/locations/',
+      '/store/',
+      '/stores/',
+      '/branch/',
+      '/branches/',
+      '/contact/',
+      
+      // Industries and sectors
+      '/industry/',
+      '/industries/',
+      '/sector/',
+      '/sectors/',
+      '/solution/',
+      '/solutions/',
+      
+      // Resources and learning
+      '/resource/',
+      '/resources/',
+      '/guide/',
+      '/guides/',
+      '/tutorial/',
+      '/tutorials/',
+      '/case-study/',
+      '/case-studies/',
+      '/whitepaper/',
+      '/whitepapers/',
+    ];
+    
+    // Check if URL matches any SEO valuable pattern
+    const isSeoValuable = seoValuePatterns.some(pattern => 
+      fullUrl.includes(pattern)
+    );
+    
+    return isSeoValuable;
+    
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Get recommended exclude patterns for SEO-focused crawling
+ */
+export function getSeoExcludePatterns(): string[] {
+  return [
+    // Cart and checkout functionality
+    '*add-to-cart*',
+    '*/cart*',
+    '*/checkout*',
+    '*/my-account*',
+    
+    // Admin and authentication
+    '*/wp-admin*',
+    '*/wp-login*',
+    '*/admin*',
+    '*/login*',
+    '*/register*',
+    '*password*',
+    
+    // API and feeds
+    '*/api/*',
+    '*/wp-json/*',
+    '*/feed*',
+    '*.xml',
+    '*/sitemap*',
+    
+    // Search and filters (often duplicate content)
+    '*?s=*',
+    '*?orderby=*',
+    '*?paged=*',
+    '*?action=*',
+    '*?wc-ajax=*',
+    '*_wpnonce=*',
+    
+    // Media files (not SEO content)
+    '*.jpg',
+    '*.jpeg',
+    '*.png',
+    '*.gif',
+    '*.svg',
+    '*.ico',
+    '*.pdf',
+    '*.doc*',
+    '*.xls*',
+    '*.zip',
+    '*.rar',
+    
+    // Scripts and styles
+    '*.js',
+    '*.css',
+    '*.min.*',
+  ];
+}
+
+/**
+ * Get recommended include patterns for SEO-focused crawling
+ */
+export function getSeoIncludePatterns(): string[] {
+  return [
+    // Main content pages (use more specific patterns)
+    '*//',  // Root path (domain.com/)
+    '*/about*',
+    '*/contact*',
+    '*/services*',
+    '*/products*',
+    '*/shop*',
+    '*/blog*',
+    '*/news*',
+    '*/faq*',
+    
+    // Category and taxonomy pages
+    '*/category/*',
+    '*/product/*',
+    '*/brand/*',
+    '*/tag/*',
+    
+    // Content pages
+    '*/page/*',
+    '*/post/*',
+    '*/article/*',
+    
+    // Location-based pages
+    '*/location/*',
+    '*/store/*',
+    '*/branch/*',
+  ];
+}
+
+/**
+ * Extract URLs from HTML with SEO-focused filtering
+ */
+export function extractSeoUrls(html: string, baseUrl: string): string[] {
+  const allUrls = extractUrls(html, baseUrl);
+  
+  return allUrls.filter(url => {
+    // First check if it's a valid URL
+    if (!isValidUrl(url)) {
+      return false;
+    }
+    
+    // Then check if it's SEO valuable
+    return isSeoValueUrl(url);
+  });
 }
 
 /**

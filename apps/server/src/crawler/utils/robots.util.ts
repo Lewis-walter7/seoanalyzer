@@ -60,14 +60,39 @@ export class RobotsUtil {
 
   /**
    * Check if a URL is allowed to be crawled according to robots.txt
+   * with enhanced support for explicitly allowed paths
    */
-  async isAllowed(url: string, userAgent: string = '*'): Promise<boolean> {
+  async isAllowed(url: string, userAgent: string = '*', allowedPaths?: string[]): Promise<boolean> {
     try {
       const urlObj = new URL(url);
       const domain = `${urlObj.protocol}//${urlObj.host}`;
       
+      // If allowedPaths are specified, check if this URL matches any of them
+      if (allowedPaths && allowedPaths.length > 0) {
+        const pathname = urlObj.pathname;
+        const isExplicitlyAllowed = allowedPaths.some(allowedPath => {
+          // Support both exact matches and wildcard patterns
+          if (allowedPath.includes('*')) {
+            const regex = new RegExp(allowedPath.replace(/\*/g, '.*'), 'i');
+            return regex.test(pathname);
+          } else {
+            return pathname.startsWith(allowedPath);
+          }
+        });
+        
+        if (isExplicitlyAllowed) {
+          return true;
+        }
+      }
+      
       const robots = await this.getRobotsTxt(domain, userAgent);
-      return robots.isAllowed(url, userAgent);
+      
+      // Check both the specific user agent and wildcard (*)
+      const isAllowedForUserAgent = robots.isAllowed(url, userAgent);
+      const isAllowedForWildcard = robots.isAllowed(url, '*');
+      
+      // Allow if either specific user agent or wildcard allows it
+      return isAllowedForUserAgent || isAllowedForWildcard;
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.warn(`[RobotsUtil] Error checking robots.txt for ${url}:`, (error as Error).message);

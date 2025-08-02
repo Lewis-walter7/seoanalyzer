@@ -7,7 +7,9 @@ export interface CrawlJob {
     disableJavaScript?: boolean;
     respectRobotsTxt?: boolean;
     crawlDelay?: number;
+    renderTime?: number;
     allowedDomains?: string[];
+    allowedPaths?: string[];
     excludePatterns?: string[];
     includePatterns?: string[];
     customHeaders?: Record<string, string>;
@@ -17,6 +19,15 @@ export interface CrawlJob {
     };
     timeout?: number;
     retries?: number;
+    concurrency?: number;
+}
+export interface PageHeadings {
+    h1: string[];
+    h2: string[];
+    h3: string[];
+    h4: string[];
+    h5: string[];
+    h6: string[];
 }
 export interface CrawledPage {
     url: string;
@@ -42,15 +53,10 @@ export interface CrawledPage {
         ogTitle?: string;
         ogDescription?: string;
         ogImage?: string;
+        twitterTitle?: string;
+        twitterDescription?: string;
     };
-    headings: {
-        h1: string[];
-        h2: string[];
-        h3: string[];
-        h4: string[];
-        h5: string[];
-        h6: string[];
-    };
+    headings: PageHeadings;
     errors?: string[];
     timestamp: Date;
 }
@@ -75,6 +81,7 @@ export interface CrawlStats {
     avgLoadTime: number;
     successRate: number;
     crawlDuration: number;
+    performanceScore?: number;
 }
 export interface CrawlResult {
     jobId: string;
@@ -101,6 +108,7 @@ export interface CrawlerOptions {
     defaultRetries?: number;
     respectRobotsTxt?: boolean;
     defaultCrawlDelay?: number;
+    defaultMaxPages?: number;
 }
 export interface CrawlerEvents {
     'page-crawled': (page: CrawledPage) => void;

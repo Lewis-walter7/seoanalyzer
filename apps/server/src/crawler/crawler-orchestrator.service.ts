@@ -117,13 +117,17 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       const crawlJobDto: CrawlJob = {
         id: crawlJobRecord.id,
         urls: [event.rootUrl], // Use the rootUrl from the event
-        maxDepth: crawlJobRecord.maxDepth || 3,
-        maxPages: crawlJobRecord.maxPages || 100,
+        maxDepth: crawlJobRecord.maxDepth || 4, // Increase depth to find more content
+        maxPages: crawlJobRecord.maxPages || 50, // Reasonable limit for testing
         userAgent: crawlJobRecord.userAgent || 'SEO-Analyzer-Bot/1.0 (+https://seo-analyzer.com/bot)',
         respectRobotsTxt: true,
-        crawlDelay: 1000, // 1 second delay
+        crawlDelay: 2000, // 2 second delay to be respectful
         timeout: 30000, // 30 seconds timeout
         retries: 3,
+        // Allow all domain variations
+        allowedDomains: this.extractDomainVariations(event.rootUrl),
+        // Exclude cart URLs to focus on content pages
+        excludePatterns: ['*add-to-cart*', '*?wc-ajax*', '*wp-admin*', '*wp-json*'],
       };
 
       this.logger.log(`Starting crawl for project ${event.projectName} (${event.rootUrl})`);
@@ -198,15 +202,26 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       this.logger.log(`Crawl started for job: ${jobId}`);
       
       // Update the CrawlJob status to RUNNING with startedAt timestamp
-      await this.prisma.crawlJob.update({
+      const updatedCrawlJob = await this.prisma.crawlJob.update({
         where: { id: jobId },
         data: {
           status: 'RUNNING',
           startedAt: new Date(),
         },
+        include: {
+          project: true,
+        },
       });
       
-      this.logger.debug(`Updated CrawlJob ${jobId} status to RUNNING`);
+      // Update the associated project's crawl status
+      await this.prisma.project.update({
+        where: { id: updatedCrawlJob.projectId },
+        data: {
+         crawlStatus: 'RUNNING',
+        },
+      });
+      
+      this.logger.debug(`Updated CrawlJob ${jobId} and Project ${updatedCrawlJob.projectId} status to RUNNING`);
     } catch (error) {
       this.logger.error(`Failed to handle crawl-started event for job ${jobId}:`, error);
     }
@@ -230,14 +245,34 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       // Find the relevant crawl job by checking if the page URL matches the project domain
       let relevantCrawlJob = null;
       for (const job of activeCrawlJobs) {
-        if (page.url.includes(job.project.domain) || job.project.url === page.url || page.url.startsWith(job.project.url)) {
-          relevantCrawlJob = job;
-          break;
+        try {
+          const pageUrl = new URL(page.url);
+          const projectUrl = new URL(job.project.url);
+          
+          // Check if the domains match (including subdomains)
+          const pageDomain = pageUrl.hostname.replace(/^www\./, '');
+          const projectDomain = job.project.domain.replace(/^www\./, '');
+          
+          if (pageDomain === projectDomain || 
+              pageUrl.hostname === job.project.domain ||
+              page.url.includes(job.project.domain) ||
+              page.url.startsWith(job.project.url)) {
+            relevantCrawlJob = job;
+            this.logger.debug(`Matched page ${page.url} to crawl job ${job.id} for project ${job.project.name}`);
+            break;
+          }
+        } catch (urlError) {
+          // Fallback to simple string matching if URL parsing fails
+          if (page.url.includes(job.project.domain) || page.url.startsWith(job.project.url)) {
+            relevantCrawlJob = job;
+            this.logger.debug(`Matched page ${page.url} to crawl job ${job.id} (fallback matching)`);
+            break;
+          }
         }
       }
 
       if (!relevantCrawlJob) {
-        this.logger.warn(`Could not find relevant CrawlJob for page: ${page.url}`);
+this.logger.warn(`Could not find relevant CrawlJob for page: ${page.url}. Potential domains are: ${activeCrawlJobs.map(job => job.project.domain).join(', ')}`);
         return;
       }
 
@@ -275,12 +310,25 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       // Perform SEO analysis if HTML content is available
       if (page.html && page.html.trim()) {
         try {
+          // Analyze HTML content for SEO metrics
           const seoAuditData = this.seoAnalyzer.analyzeHtml(page.html, page.url);
+          
+          // Update performance score with actual load time data
+          const updatedSeoAuditData = this.seoAnalyzer.updatePerformanceScore(seoAuditData, page.loadTime);
+          
+          // Calculate performance score explicitly to ensure it's properly set
+          const performanceScore = this.seoAnalyzer.calculatePerformanceScore(
+            page.size || updatedSeoAuditData.pageSize, 
+            page.loadTime
+          );
+          
           const seoAuditRecord = { 
             pageId: savedPage.id,
             projectId: relevantCrawlJob.project.id, // Add project ID for direct querying
-            ...seoAuditData, 
-            loadTime: page.loadTime, 
+            ...updatedSeoAuditData,
+            loadTime: page.loadTime,
+            pageSize: page.size || updatedSeoAuditData.pageSize,
+            performanceScore: performanceScore, // Explicitly set performance score
             auditedAt: new Date() 
           };
           
@@ -290,7 +338,7 @@ export class CrawlerOrchestratorService implements OnModuleInit {
             update: seoAuditRecord 
           });
           
-          this.logger.debug(`Analyzed and stored SEO data for page: ${page.url}`);
+          this.logger.debug(`Analyzed and stored SEO data for page: ${page.url} (Performance Score: ${performanceScore.toFixed(2)})`);
         } catch (seoError) {
           this.logger.error(`Failed to analyze SEO data for page ${page.url}:`, seoError);
         }
@@ -308,7 +356,8 @@ export class CrawlerOrchestratorService implements OnModuleInit {
 
       this.logger.debug(`Stored page ${page.url} for CrawlJob ${relevantCrawlJob.id}`);
     } catch (error) {
-      this.logger.error(`Failed to handle page-crawled event for ${page.url}:`, error);
+this.logger.error(`Failed to handle page-crawled event for ${page.url}:`, error);
+this.logger.debug(`Page info: status=${page.statusCode}, responseTime=${page.loadTime}, size=${page.size}, title=${page.title}`);
     }
   }
 
@@ -390,6 +439,17 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       const finalStatus = result.completed && result.errors.length === 0 ? 'COMPLETED' : 
                          result.completed && result.errors.length > 0 ? 'COMPLETED' : 'FAILED';
       
+      // Get the crawl job to access project information
+      const crawlJob = await this.prisma.crawlJob.findUnique({
+        where: { id: result.jobId },
+        include: { project: true },
+      });
+
+      if (!crawlJob) {
+        this.logger.error(`CrawlJob ${result.jobId} not found`);
+        return;
+      }
+      
       // Update the CrawlJob with final status and completion data
       await this.prisma.crawlJob.update({
         where: { id: result.jobId },
@@ -406,6 +466,9 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       if (result.pages.length > 0) {
         await this.storePagesFromResult(result.jobId, result.pages);
       }
+
+      // Calculate and update project details
+      await this.updateProjectDetailsAfterCrawl(crawlJob.projectId, finalStatus);
 
       this.logger.log(`CrawlJob ${result.jobId} marked as ${finalStatus}`);
     } catch (error) {
@@ -451,6 +514,75 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       this.logger.debug(`Stored/updated ${pages.length} pages for CrawlJob ${crawlJobId}`);
     } catch (error) {
       this.logger.error(`Failed to store pages from crawl result for job ${crawlJobId}:`, error);
+    }
+  }
+
+  /**
+   * Update project details after crawl completion
+   */
+  private async updateProjectDetailsAfterCrawl(projectId: string, finalStatus: string) {
+    try {
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          seoAudits: true,
+          crawlJobs: {
+            where: { status: 'COMPLETED' },
+            orderBy: { finishedAt: 'desc' },
+          }
+        },
+      });
+
+      if (!project) {
+        this.logger.error(`Project ${projectId} not found for update after crawl`);
+        return;
+      }
+
+      const seoScores = project.seoAudits.map(audit => audit.performanceScore || 0);
+      const averageOnPageScore = seoScores.length > 0 ? seoScores.reduce((a, b) => a + b, 0) / seoScores.length : 0;
+
+      await this.prisma.project.update({
+        where: { id: projectId },
+        data: {
+          lastCrawl: new Date(),
+          crawlStatus: finalStatus as 'COMPLETED',
+          onPageScore: averageOnPageScore,
+          totalPages: project.crawlJobs[0]?.totalUrls || 0,
+          totalIssues: project.seoAudits.length,
+        }
+      });
+
+      this.logger.log(`Updated project ${projectId} details after crawl`);
+    } catch (error) {
+      this.logger.error(`Failed to update project details for ${projectId} after crawl:`, error);
+    }
+  }
+
+  /**
+   * Extract domain variations to allow crawling of all domain formats
+   */
+  private extractDomainVariations(rootUrl: string): string[] {
+    try {
+      const urlObj = new URL(rootUrl);
+      const hostname = urlObj.hostname;
+      
+      const variations = [hostname];
+      
+      // Add www variation if not present
+      if (!hostname.startsWith('www.')) {
+        variations.push(`www.${hostname}`);
+      }
+      
+      // Add variation without www if present
+      if (hostname.startsWith('www.')) {
+        variations.push(hostname.replace(/^www\./, ''));
+      }
+      
+      this.logger.debug(`Domain variations for ${rootUrl}: ${variations.join(', ')}`);
+      return variations;
+    } catch (error) {
+      this.logger.warn(`Failed to extract domain variations for ${rootUrl}:`, error);
+      return [rootUrl];
     }
   }
 }

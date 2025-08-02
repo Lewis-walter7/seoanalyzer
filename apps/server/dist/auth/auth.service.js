@@ -36,7 +36,6 @@ let AuthService = class AuthService {
         const existingUser = await this.prisma.user.findUnique({
             where: { email },
         });
-        console.log(credentials);
         if (existingUser) {
             throw new common_1.BadRequestException('User already exists with this email');
         }

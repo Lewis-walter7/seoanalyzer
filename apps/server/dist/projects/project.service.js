@@ -248,6 +248,90 @@ let ProjectService = class ProjectService {
         };
     }
     /**
+     * Get audits for a specific project
+     */
+    async getProjectAudits(userId, projectId) {
+        try {
+            // 1. Verify JWT → user → project ownership (return 401/403 as needed)
+            const project = await this.prisma.project.findFirst({
+                where: {
+                    id: projectId,
+                    userId,
+                },
+            });
+            if (!project) {
+                throw new common_1.NotFoundException('Project not found');
+            }
+            // 2. Query DB: SeoAudit.findMany({ where: { projectId }, include: { pages: true } })
+            // Since SeoAudit is linked to pages, we need to get audits through the project relationship
+            const seoAudits = await this.prisma.seoAudit.findMany({
+                where: { projectId },
+                include: {
+                    page: {
+                        select: {
+                            id: true,
+                            url: true,
+                            title: true,
+                            crawledAt: true,
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+            });
+            // Group the audits by creation date (audit sessions)
+            const auditMap = new Map();
+            for (const audit of seoAudits) {
+                const auditDate = audit.createdAt.toDateString();
+                const auditId = audit.id;
+                // For each Page, select SEO metrics: titleTag, metaDescription, h1Count, imgMissingAlt, totalLinks, performanceScore, etc.
+                const seoAuditPage = {
+                    id: audit.page.id,
+                    url: audit.page.url,
+                    title: audit.page.title,
+                    titleTag: audit.titleTag,
+                    metaDescription: audit.metaDescription,
+                    h1Count: audit.h1Count,
+                    imgMissingAlt: audit.imagesWithoutAlt,
+                    totalLinks: audit.internalLinksCount + audit.externalLinksCount,
+                    performanceScore: audit.performanceScore,
+                    seoScore: audit.seoScore,
+                    accessibilityScore: audit.accessibilityScore,
+                    internalLinksCount: audit.internalLinksCount,
+                    externalLinksCount: audit.externalLinksCount,
+                    brokenLinksCount: audit.brokenLinksCount,
+                    loadTime: audit.loadTime,
+                    pageSize: audit.pageSize,
+                    hasCanonical: audit.hasCanonical,
+                    isIndexable: audit.isIndexable,
+                    crawledAt: audit.page.crawledAt,
+                };
+                if (!auditMap.has(auditDate)) {
+                    auditMap.set(auditDate, {
+                        id: auditId,
+                        createdAt: audit.createdAt,
+                        pages: [],
+                    });
+                }
+                auditMap.get(auditDate).pages.push(seoAuditPage);
+            }
+            // Convert map to array and sort by creation date
+            const audits = Array.from(auditMap.values())
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+            return { audits };
+        }
+        catch (error) {
+            // 4. Mirror error handling style of existing /v1/projects proxy route (catch block with status 401/403/500)
+            if (error instanceof common_1.NotFoundException) {
+                throw error;
+            }
+            if (error instanceof common_1.ForbiddenException) {
+                throw error;
+            }
+            console.error('Error fetching project audits:', error);
+            throw new common_1.BadRequestException('Failed to fetch project audits');
+        }
+    }
+    /**
      * Record usage for project operations
      */
     async recordUsage(userId, usageType) {

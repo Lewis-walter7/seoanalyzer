@@ -56,6 +56,7 @@ export interface SeoAuditData {
     seoScore?: number;
     performanceScore?: number;
     accessibilityScore?: number;
+    issues?: string[];
 }
 export declare class SeoAnalyzer {
     analyzeHtml(html: string, url?: string): SeoAuditData;
@@ -73,4 +74,20 @@ export declare class SeoAnalyzer {
     private analyzeTechnicalSeo;
     private countWords;
     private calculateContentRatio;
+    /**
+     * Calculate SEO score based on various SEO factors (0-100)
+     */
+    private calculateSeoScore;
+    /**
+     * Calculate performance score based on load time and page size (0-100)
+     */
+    calculatePerformanceScore(pageSize?: number, loadTime?: number): number;
+    /**
+     * Calculate accessibility score based on various accessibility factors (0-100)
+     */
+    private calculateAccessibilityScore;
+    /**
+     * Update performance score with actual load time data
+     */
+    updatePerformanceScore(auditData: SeoAuditData, loadTime: number): SeoAuditData;
 }

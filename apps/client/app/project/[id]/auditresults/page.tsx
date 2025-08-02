@@ -156,6 +156,7 @@ async function fetchAuditData(projectId: string) {
   try {
     // Fetch project data from the backend
     const projectData = await api.getBackendProject(projectId);
+    console.log('Project Data:', projectData);
     
     // Fetch audit data from the Next.js API route
     const auditsResponse = await api.getAuditData(projectId);
@@ -199,6 +200,7 @@ interface AuditResultsProps {
 
 function AuditResults({ params }: AuditResultsProps) {
   const { data: apiData, error, isLoading } = useAuditResults(params.id);
+  console.log('API Data:', apiData);
 
   // Handle loading state
   if (isLoading) {
@@ -258,7 +260,7 @@ function AuditResults({ params }: AuditResultsProps) {
   }
 
   // Transform the API data to our component format
-  const { project, results } = transformAuditData(apiData.project, { audits: apiData.audits });
+  const { project, results } = transformAuditData(apiData.project as ApiProjectResponse, { audits: apiData.audits });
   
   return (
     <div className="container mx-auto px-4 py-6">

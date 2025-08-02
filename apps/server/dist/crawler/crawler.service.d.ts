@@ -21,6 +21,10 @@ export declare class CrawlerService extends EventEmitter {
      */
     private executeCrawl;
     /**
+     * Crawl a single page with retry logic
+     */
+    private crawlSinglePageWithRetry;
+    /**
      * Crawl a single page using fetch
      */
     private crawlSinglePageWithFetch;
@@ -28,6 +32,7 @@ export declare class CrawlerService extends EventEmitter {
      * Extract page data from HTML using basic parsing
      */
     private extractPageDataFromHTML;
+    private decodeHtmlEntities;
     private addDiscoveredUrls;
     private respectCrawlDelay;
     private validateCrawlJob;

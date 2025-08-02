@@ -9,8 +9,9 @@ export declare class RobotsUtil {
     getRobotsTxt(domain: string, userAgent?: string): Promise<any>;
     /**
      * Check if a URL is allowed to be crawled according to robots.txt
+     * with enhanced support for explicitly allowed paths
      */
-    isAllowed(url: string, userAgent?: string): Promise<boolean>;
+    isAllowed(url: string, userAgent?: string, allowedPaths?: string[]): Promise<boolean>;
     /**
      * Get the crawl delay for a specific user agent
      */

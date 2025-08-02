@@ -64,7 +64,7 @@ export default function CreateProjectModal({ isOpen, onClose, onProjectCreated }
       const projectData = {
         name: data.name,
         url: data.url,
-        description: data.description || null,
+        description: data.description ?? undefined,
         targetKeywords: typeof data.targetKeywords === 'string'
           ? data.targetKeywords.split(',').map(k => k.trim()).filter(Boolean)
           : data.targetKeywords || [],

@@ -20,7 +20,8 @@ model Project {
   analysisReports AnalysisReport[]
   keywordRankings KeywordRanking[]
   seoIssues       SeoIssue[]
-  User            User?            @relation(fields: [userId], references: [id])
+  seoAudits       SeoAudit[]
+  User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String?          @db.ObjectId
 
   @@map("projects")
@@ -83,8 +84,9 @@ model Page {
 }
 
 model SeoAudit {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  pageId String @unique @db.ObjectId
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  pageId    String  @unique @db.ObjectId
+  projectId String? @db.ObjectId
 
   // Title metrics
   titleTag      String?
@@ -175,8 +177,10 @@ model SeoAudit {
   updatedAt DateTime @updatedAt
 
   // Relations
-  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  page    Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
   @@map("seo_audits")
 }
 

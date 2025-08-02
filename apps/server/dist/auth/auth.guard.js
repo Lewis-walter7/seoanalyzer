@@ -28,7 +28,6 @@ let AuthGuard = class AuthGuard {
         this.authService = authService;
     }
     async canActivate(context) {
-        console.log('[AuthGuard] Activating guard');
         // Check if route is marked as public
         const isPublic = this.reflector.getAllAndOverride(exports.IS_PUBLIC_KEY, [
             context.getHandler(),
@@ -39,15 +38,12 @@ let AuthGuard = class AuthGuard {
         }
         const request = context.switchToHttp().getRequest();
         const token = this.extractTokenFromHeader(request);
-        console.log('[AuthGuard] Token:', token);
         if (!token) {
             throw new common_1.UnauthorizedException('Access token is required');
         }
         try {
             // Use AuthService to validate access token (includes database session validation)
-            console.log('[AuthGuard] Validating access token through AuthService');
             const validation = await this.authService.validateAccessToken(token);
-            console.log('[AuthGuard] AuthService validation successful');
             // Attach user to request object
             request['user'] = validation.user;
         }
@@ -58,9 +54,7 @@ let AuthGuard = class AuthGuard {
         return true;
     }
     extractTokenFromHeader(request) {
-        console.log('[AuthGuard] Extracting token from header');
         const [type, token] = request.headers.authorization?.split(' ') ?? [];
-        console.log('[AuthGuard] Extracted token:', token);
         return type === 'Bearer' ? token : undefined;
     }
 };

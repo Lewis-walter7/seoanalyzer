@@ -39,7 +39,9 @@ class RobotsUtil {
             return robots;
         }
         catch (error) {
-            console.warn(`Failed to fetch robots.txt for ${domain}:`, error.message);
+            if (process.env.NODE_ENV === 'development') {
+                console.warn(`[RobotsUtil] Failed to fetch robots.txt for ${domain}:`, error.message);
+            }
             // Return a permissive robots.txt parser if we can't fetch it
             const robots = (0, robots_parser_1.default)(`${domain}/robots.txt`, '');
             this.robotsCache.set(cacheKey, robots);
@@ -49,16 +51,40 @@ class RobotsUtil {
     }
     /**
      * Check if a URL is allowed to be crawled according to robots.txt
+     * with enhanced support for explicitly allowed paths
      */
-    async isAllowed(url, userAgent = '*') {
+    async isAllowed(url, userAgent = '*', allowedPaths) {
         try {
             const urlObj = new URL(url);
             const domain = `${urlObj.protocol}//${urlObj.host}`;
+            // If allowedPaths are specified, check if this URL matches any of them
+            if (allowedPaths && allowedPaths.length > 0) {
+                const pathname = urlObj.pathname;
+                const isExplicitlyAllowed = allowedPaths.some(allowedPath => {
+                    // Support both exact matches and wildcard patterns
+                    if (allowedPath.includes('*')) {
+                        const regex = new RegExp(allowedPath.replace(/\*/g, '.*'), 'i');
+                        return regex.test(pathname);
+                    }
+                    else {
+                        return pathname.startsWith(allowedPath);
+                    }
+                });
+                if (isExplicitlyAllowed) {
+                    return true;
+                }
+            }
             const robots = await this.getRobotsTxt(domain, userAgent);
-            return robots.isAllowed(url, userAgent);
+            // Check both the specific user agent and wildcard (*)
+            const isAllowedForUserAgent = robots.isAllowed(url, userAgent);
+            const isAllowedForWildcard = robots.isAllowed(url, '*');
+            // Allow if either specific user agent or wildcard allows it
+            return isAllowedForUserAgent || isAllowedForWildcard;
         }
         catch (error) {
-            console.warn(`Error checking robots.txt for ${url}:`, error.message);
+            if (process.env.NODE_ENV === 'development') {
+                console.warn(`[RobotsUtil] Error checking robots.txt for ${url}:`, error.message);
+            }
             // Default to allowing if we can't check
             return true;
         }
@@ -75,7 +101,9 @@ class RobotsUtil {
             return delay ? delay * 1000 : null; // Convert to milliseconds
         }
         catch (error) {
-            console.warn(`Error getting crawl delay for ${url}:`, error.message);
+            if (process.env.NODE_ENV === 'development') {
+                console.warn(`[RobotsUtil] Error getting crawl delay for ${url}:`, error.message);
+            }
             return null;
         }
     }
@@ -88,7 +116,9 @@ class RobotsUtil {
             return robots.getSitemaps() || [];
         }
         catch (error) {
-            console.warn(`Error getting sitemaps for ${domain}:`, error.message);
+            if (process.env.NODE_ENV === 'development') {
+                console.warn(`[RobotsUtil] Error getting sitemaps for ${domain}:`, error.message);
+            }
             return [];
         }
     }
@@ -121,7 +151,9 @@ class RobotsUtil {
             };
         }
         catch (error) {
-            console.warn(`Error parsing robots.txt rules for ${domain}:`, error.message);
+            if (process.env.NODE_ENV === 'development') {
+                console.warn(`[RobotsUtil] Error parsing robots.txt rules for ${domain}:`, error.message);
+            }
             return {
                 userAgent,
                 allow: [],
