@@ -9,11 +9,11 @@ export declare class SubscriptionController {
     private readonly logger;
     constructor(subscriptionService: SubscriptionService, paymentService: PaymentService);
     getAllPlans(): Promise<{
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        description: string | null;
         intasendCustomerId: string | null;
         displayName: string;
         priceMonthly: number;

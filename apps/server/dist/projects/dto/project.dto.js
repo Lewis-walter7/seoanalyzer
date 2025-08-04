@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateProjectDto = exports.CreateProjectDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 class CreateProjectDto {
     name;
     url;
@@ -41,6 +42,13 @@ __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     (0, class_validator_1.ArrayMaxSize)(20),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        // Handle both string and array inputs
+        if (typeof value === 'string') {
+            return value.split(',').map(k => k.trim()).filter(Boolean);
+        }
+        return Array.isArray(value) ? value : [];
+    }),
     __metadata("design:type", Array)
 ], CreateProjectDto.prototype, "targetKeywords", void 0);
 __decorate([
@@ -48,6 +56,13 @@ __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     (0, class_validator_1.ArrayMaxSize)(10),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        // Handle both string and array inputs
+        if (typeof value === 'string') {
+            return value.split(',').map(c => c.trim()).filter(Boolean);
+        }
+        return Array.isArray(value) ? value : [];
+    }),
     __metadata("design:type", Array)
 ], CreateProjectDto.prototype, "competitors", void 0);
 class UpdateProjectDto {
@@ -82,6 +97,12 @@ __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     (0, class_validator_1.ArrayMaxSize)(20),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (typeof value === 'string') {
+            return value.split(',').map(k => k.trim()).filter(Boolean);
+        }
+        return Array.isArray(value) ? value : [];
+    }),
     __metadata("design:type", Array)
 ], UpdateProjectDto.prototype, "targetKeywords", void 0);
 __decorate([
@@ -89,5 +110,11 @@ __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     (0, class_validator_1.ArrayMaxSize)(10),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (typeof value === 'string') {
+            return value.split(',').map(c => c.trim()).filter(Boolean);
+        }
+        return Array.isArray(value) ? value : [];
+    }),
     __metadata("design:type", Array)
 ], UpdateProjectDto.prototype, "competitors", void 0);

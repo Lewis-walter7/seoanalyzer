@@ -30,7 +30,7 @@ let CrawlerService = CrawlerService_1 = class CrawlerService extends events_1.Ev
         defaultRetries: 3,
         respectRobotsTxt: true,
         defaultCrawlDelay: 1000,
-        defaultMaxPages: 1000, // Default max pages to crawl
+        defaultMaxPages: 2000, // Increased default max pages to crawl
     };
     constructor() {
         super();
@@ -411,42 +411,57 @@ let CrawlerService = CrawlerService_1 = class CrawlerService extends events_1.Ev
     }
     addDiscoveredUrls(links, parentUrl, crawlState) {
         const { job, urlQueue, processedUrls } = crawlState;
-        links.forEach(link => {
+        let addedCount = 0;
+        const maxNewUrls = Math.min(100, job.maxPages - processedUrls.size); // Increased limit per page
+        this.logger.debug(`Discovering URLs from ${parentUrl}: found ${links.length} links`);
+        for (const link of links) {
+            if (addedCount >= maxNewUrls)
+                break;
             // Skip if already processed or queued
             if (processedUrls.has(link) || urlQueue.has(link)) {
-                return;
+                continue;
             }
             // Check if we've reached the page limit
             if (processedUrls.size + urlQueue.size >= job.maxPages) {
-                return;
+                this.logger.debug(`Reached max pages limit (${job.maxPages})`);
+                break;
             }
-            // Check depth limit
-            const linkDepth = (0, url_util_1.getUrlDepth)(link, job.urls[0]);
-            if (linkDepth > job.maxDepth) {
-                return;
+            // Skip non-HTTP(S) URLs early
+            if (!link.startsWith('http://') && !link.startsWith('https://')) {
+                continue;
             }
-            // Check domain restrictions
+            // Check domain restrictions first
             if (job.allowedDomains && !(0, url_util_1.isAllowedDomain)(link, job.allowedDomains)) {
-                this.logger.debug(`URL ${link} filtered out - not in allowed domains: ${job.allowedDomains.join(', ')}`);
-                return;
+                this.logger.debug(`URL ${link} filtered out - not in allowed domains`);
+                continue;
             }
-            // Check exclude patterns
+            // Check exclude patterns early
             if (job.excludePatterns && (0, url_util_1.matchesPatterns)(link, job.excludePatterns)) {
                 this.logger.debug(`URL ${link} filtered out - matches exclude pattern`);
-                return;
+                continue;
             }
-            // Check include patterns
+            // Check include patterns if specified
             if (job.includePatterns && !(0, url_util_1.matchesPatterns)(link, job.includePatterns)) {
                 this.logger.debug(`URL ${link} filtered out - doesn't match include pattern`);
-                return;
+                continue;
             }
-            // Skip non-HTTP(S) URLs
-            if (!link.startsWith('http://') && !link.startsWith('https://')) {
-                return;
+            // Check depth limit - be more permissive
+            const linkDepth = (0, url_util_1.getUrlDepth)(link, job.urls[0]);
+            if (linkDepth > job.maxDepth) {
+                this.logger.debug(`URL ${link} filtered out - depth ${linkDepth} > max ${job.maxDepth}`);
+                continue;
             }
             // Add to queue
             urlQueue.add(link);
-        });
+            addedCount++;
+            this.logger.debug(`Added URL to queue: ${link} (depth: ${linkDepth})`);
+        }
+        if (addedCount > 0) {
+            this.logger.debug(`Added ${addedCount} new URLs to queue from ${parentUrl}`);
+        }
+        else {
+            this.logger.debug(`No new URLs added from ${parentUrl} (${links.length} links checked)`);
+        }
     }
     async respectCrawlDelay(url, domainDelays, lastCrawlTime, jobCrawlDelay) {
         const domain = (0, url_util_1.extractDomain)(url);

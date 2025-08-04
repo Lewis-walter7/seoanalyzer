@@ -14,6 +14,7 @@ exports.getSeoExcludePatterns = getSeoExcludePatterns;
 exports.getSeoIncludePatterns = getSeoIncludePatterns;
 exports.extractSeoUrls = extractSeoUrls;
 exports.generateCrawlId = generateCrawlId;
+exports.extractDomainVariations = extractDomainVariations;
 /**
  * Normalize a URL by removing fragments, sorting query parameters, etc.
  */
@@ -173,43 +174,19 @@ function extractUrls(html, baseUrl) {
     // Remove duplicates
     return Array.from(new Set(urls));
 }
-/**
- * Get URL depth relative to a base URL - FIXED VERSION
- */
-// export function getUrlDepth(url: string, baseUrl: string): number {
-//   try {
-//     const urlObj = new URL(url);
-//     const baseObj = new URL(baseUrl);
-//     // If different domains, return max depth
-//     if (urlObj.host !== baseObj.host) {
-//       return Infinity;
-//     }
-//     // Clean and split paths, removing empty segments
-//     const urlPath = urlObj.pathname.split('/').filter(segment => segment.length > 0);
-//     const basePath = baseObj.pathname.split('/').filter(segment => segment.length > 0);
-//     // For same domain URLs, calculate depth from root
-//     // This allows discovery of all pages on the same domain
-//     return urlPath.length;
-//   } catch (error) {
-//     return Infinity;
-//   }
-// }
-/**
- * Get URL depth relative to a base URL - FIXED VERSION
- */
 function getUrlDepth(url, baseUrl) {
     try {
         const urlObj = new URL(url);
         const baseObj = new URL(baseUrl);
-        // If different domains, return max depth
+        // If different domains, return max depth to exclude them
         if (urlObj.host !== baseObj.host) {
             return Infinity;
         }
         // Clean and split paths, removing empty segments
         const urlPath = urlObj.pathname.split('/').filter(segment => segment.length > 0);
         const basePath = baseObj.pathname.split('/').filter(segment => segment.length > 0);
-        // For same domain URLs, calculate depth from root
-        // This allows discovery of all pages on the same domain
+        // For same domain URLs, use a simple depth calculation from root
+        // This is more permissive and allows discovery of all pages on the same domain
         return urlPath.length;
     }
     catch (error) {
@@ -230,21 +207,18 @@ function isSeoValueUrl(url) {
             return false;
         }
         const fullUrl = url.toLowerCase();
-        // Exclude functional URLs that don't provide SEO value
+        // First, exclude clearly functional URLs that don't provide SEO value
         const functionalPatterns = [
-            // E-commerce functionality (but allow product/category cart pages)
-            '/add-to-cart',
+            // E-commerce functionality (but allow product/category pages)
             '?add-to-cart=',
             '&add-to-cart=',
-            '/cart/', // Changed to be more specific - allows /cart-category but not /cart/
+            'add-to-cart',
             '/checkout',
+            '/cart/',
+            '/cart',
             '/basket/',
             '/my-account',
-            '/account/',
-            '/user/',
-            '/profile/',
             // Admin and authentication
-            '/admin',
             '/wp-admin',
             '/wp-login',
             '/login',
@@ -278,8 +252,6 @@ function isSeoValueUrl(url) {
             '&s=',
             '?search=',
             '&search=',
-            '?q=',
-            '&q=',
             '?orderby=',
             '&orderby=',
             '?sort=',
@@ -290,33 +262,6 @@ function isSeoValueUrl(url) {
             '&page=',
             '?filter=',
             '&filter=',
-            // File downloads (not SEO content)
-            '.pdf',
-            '.doc',
-            '.docx',
-            '.xls',
-            '.xlsx',
-            '.zip',
-            '.rar',
-            '.tar',
-            '.gz',
-            // Media files
-            '.jpg',
-            '.jpeg',
-            '.png',
-            '.gif',
-            '.svg',
-            '.webp',
-            '.ico',
-            '.mp3',
-            '.mp4',
-            '.avi',
-            '.mov',
-            '.wav',
-            // Scripts and styles
-            '.js',
-            '.css',
-            '.min.',
             // Common functional paths
             '/wp-content/',
             '/wp-includes/',
@@ -331,80 +276,14 @@ function isSeoValueUrl(url) {
             'doubleclick',
             'googletagmanager',
         ];
-        // Check if URL matches any functional pattern
+        // Check if URL matches any functional pattern that should be excluded
         const isFunctional = functionalPatterns.some(pattern => fullUrl.includes(pattern));
         if (isFunctional) {
             return false;
         }
-        // For simple paths and root, consider them valuable
-        if (pathname === '/' || pathname.split('/').filter(Boolean).length <= 3) {
-            return true;
-        }
-        // Include common SEO-valuable content patterns
-        const seoValuePatterns = [
-            // Main content pages
-            '/about',
-            '/contact',
-            '/services',
-            '/products',
-            '/blog',
-            '/news',
-            '/articles',
-            '/faq',
-            '/help',
-            '/support',
-            '/privacy',
-            '/terms',
-            '/policy',
-            // E-commerce content (not functionality)
-            '/category/',
-            '/categories/',
-            '/product/',
-            '/products/',
-            '/brand/',
-            '/brands/',
-            '/shop',
-            '/store',
-            '/collection/',
-            '/collections/',
-            // Content management
-            '/page/',
-            '/pages/',
-            '/post/',
-            '/posts/',
-            '/article/',
-            '/articles/',
-            '/content/',
-            // Location and business info
-            '/location/',
-            '/locations/',
-            '/store/',
-            '/stores/',
-            '/branch/',
-            '/branches/',
-            '/contact/',
-            // Industries and sectors
-            '/industry/',
-            '/industries/',
-            '/sector/',
-            '/sectors/',
-            '/solution/',
-            '/solutions/',
-            // Resources and learning
-            '/resource/',
-            '/resources/',
-            '/guide/',
-            '/guides/',
-            '/tutorial/',
-            '/tutorials/',
-            '/case-study/',
-            '/case-studies/',
-            '/whitepaper/',
-            '/whitepapers/',
-        ];
-        // Check if URL matches any SEO valuable pattern
-        const isSeoValuable = seoValuePatterns.some(pattern => fullUrl.includes(pattern));
-        return isSeoValuable;
+        // Be more permissive - allow most URLs that aren't explicitly functional
+        // This approach is better for discovering content
+        return true;
     }
     catch (error) {
         return false;
@@ -507,4 +386,56 @@ function extractSeoUrls(html, baseUrl) {
  */
 function generateCrawlId() {
     return `crawl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+/**
+ * Extract domain variations from a URL for comprehensive domain matching
+ * Generates variations including root domain, dot-prefixed domain, www subdomain, and existing subdomains
+ * Uses public suffix list to properly identify the effective top-level domain (eTLD+1)
+ */
+function extractDomainVariations(url) {
+    try {
+        // Import tldts for public suffix list parsing
+        const { parse } = require('tldts');
+        // Normalize the URL first
+        const normalizedUrl = normalizeUrl(url);
+        const urlObj = new URL(normalizedUrl);
+        // Parse the domain using public suffix list
+        const parsed = parse(urlObj.hostname);
+        if (!parsed.domain || !parsed.publicSuffix) {
+            return [];
+        }
+        const variations = new Set();
+        // Get the effective top-level domain (eTLD+1) - domain + public suffix
+        const eTLD1 = parsed.domain;
+        // Add root domain (eTLD+1)
+        variations.add(eTLD1);
+        // Add dot-prefixed domain for wildcard matching
+        variations.add(`.${eTLD1}`);
+        // Add www subdomain if not already present
+        if (!urlObj.hostname.startsWith('www.')) {
+            variations.add(`www.${eTLD1}`);
+        }
+        // Add the original hostname if it's different from eTLD+1 (has subdomains)
+        if (urlObj.hostname !== eTLD1) {
+            variations.add(urlObj.hostname);
+            // Also add dot-prefixed version of the full hostname
+            variations.add(`.${urlObj.hostname}`);
+        }
+        // If the original hostname has subdomains, also add common subdomain variations
+        if (parsed.subdomain) {
+            const subdomains = parsed.subdomain.split('.');
+            // Add each level of subdomain
+            for (let i = 0; i < subdomains.length; i++) {
+                const partialSubdomain = subdomains.slice(i).join('.');
+                const domainWithSubdomain = `${partialSubdomain}.${eTLD1}`;
+                variations.add(domainWithSubdomain);
+                variations.add(`.${domainWithSubdomain}`);
+            }
+        }
+        return Array.from(variations).sort();
+    }
+    catch (error) {
+        // Return empty array for invalid URLs or parsing errors
+        return [];
+    }
 }

@@ -7,7 +7,8 @@ import {
   normalizeUrl,
   resolveUrl,
   isValidUrl,
-  matchesPatterns
+  matchesPatterns,
+  extractDomainVariations
 } from './url.util';
 
 describe('URL Utilities', () => {
@@ -344,6 +345,223 @@ describe('URL Utilities', () => {
       
       expect(urls.length).toBe(1000);
       expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
+    });
+  });
+
+  describe('extractDomainVariations', () => {
+    describe('Basic Domain Tests', () => {
+      it('should extract variations for basic domain', () => {
+        const variations = extractDomainVariations('http://example.com');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+        expect(variations.length).toBeGreaterThanOrEqual(3);
+      });
+
+      it('should handle HTTPS protocol', () => {
+        const variations = extractDomainVariations('https://example.com');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+      });
+
+      it('should handle trailing slashes', () => {
+        const variations = extractDomainVariations('https://example.com/');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+      });
+    });
+
+    describe('Subdomain Tests', () => {
+      it('should extract variations for subdomains', () => {
+        const variations = extractDomainVariations('https://blog.example.com');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+        expect(variations).toContain('blog.example.com');
+        expect(variations).toContain('.blog.example.com');
+      });
+
+      it('should handle www subdomain specifically', () => {
+        const variations = extractDomainVariations('https://www.example.com');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+        expect(variations).toContain('.www.example.com');
+      });
+
+      it('should handle multiple subdomains', () => {
+        const variations = extractDomainVariations('https://api.v1.example.com');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+        expect(variations).toContain('api.v1.example.com');
+        expect(variations).toContain('.api.v1.example.com');
+        expect(variations).toContain('v1.example.com');
+        expect(variations).toContain('.v1.example.com');
+      });
+    });
+
+    describe('Protocol Normalization Tests', () => {
+      it('should normalize mixed case protocols', () => {
+        const variations = extractDomainVariations('HtTp://example.com/');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+      });
+
+      it('should handle protocol-relative URLs', () => {
+        const variations = extractDomainVariations('//example.com');
+        
+        // This should fail gracefully and return empty array
+        expect(variations).toEqual([]);
+      });
+    });
+
+    describe('Effective TLD Tests', () => {
+      it('should handle .co.uk domains', () => {
+        const variations = extractDomainVariations('https://example.co.uk');
+        
+        expect(variations).toContain('example.co.uk');
+        expect(variations).toContain('.example.co.uk');
+        expect(variations).toContain('www.example.co.uk');
+      });
+
+      it('should handle .com.au domains', () => {
+        const variations = extractDomainVariations('https://example.com.au');
+        
+        expect(variations).toContain('example.com.au');
+        expect(variations).toContain('.example.com.au');
+        expect(variations).toContain('www.example.com.au');
+      });
+
+      it('should handle .org.uk domains', () => {
+        const variations = extractDomainVariations('https://example.org.uk');
+        
+        expect(variations).toContain('example.org.uk');
+        expect(variations).toContain('.example.org.uk');
+        expect(variations).toContain('www.example.org.uk');
+      });
+    });
+
+    describe('Edge Cases', () => {
+      it('should return empty array for invalid URLs', () => {
+        const variations = extractDomainVariations('invalid-url');
+        
+        expect(variations).toEqual([]);
+      });
+
+      it('should return empty array for empty string', () => {
+        const variations = extractDomainVariations('');
+        
+        expect(variations).toEqual([]);
+      });
+
+      it('should handle localhost', () => {
+        const variations = extractDomainVariations('http://localhost:3000');
+        
+        // localhost should return empty array as it doesn't have a public suffix
+        expect(variations).toEqual([]);
+      });
+
+      it('should handle IP addresses', () => {
+        const variations = extractDomainVariations('http://192.168.1.1');
+        
+        // IP addresses should return empty array as they don't have public suffixes
+        expect(variations).toEqual([]);
+      });
+    });
+
+    describe('Result Consistency', () => {
+      it('should return sorted results', () => {
+        const variations = extractDomainVariations('https://api.blog.example.com');
+        
+        // Check if array is sorted
+        const sortedVariations = [...variations].sort();
+        expect(variations).toEqual(sortedVariations);
+      });
+
+      it('should not contain duplicates', () => {
+        const variations = extractDomainVariations('https://www.example.com');
+        
+        const uniqueVariations = [...new Set(variations)];
+        expect(variations).toEqual(uniqueVariations);
+      });
+
+      it('should handle paths and query parameters', () => {
+        const variations = extractDomainVariations('https://example.com/path/to/page?query=value');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+        // Should not include path or query in domain variations
+        expect(variations.every(v => !v.includes('/path'))).toBe(true);
+        expect(variations.every(v => !v.includes('?query'))).toBe(true);
+      });
+    });
+
+    describe('Integration with normalizeUrl', () => {
+      it('should work with normalized URLs', () => {
+        const normalizedUrl = normalizeUrl('https://example.com/path/?query=value#fragment');
+        const variations = extractDomainVariations(normalizedUrl);
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+      });
+    });
+
+    describe('Real-world Domain Examples', () => {
+      it('should handle Google domains', () => {
+        const variations = extractDomainVariations('https://mail.google.com');
+        
+        expect(variations).toContain('google.com');
+        expect(variations).toContain('.google.com');
+        expect(variations).toContain('www.google.com');
+        expect(variations).toContain('mail.google.com');
+        expect(variations).toContain('.mail.google.com');
+      });
+
+      it('should handle GitHub domains', () => {
+        const variations = extractDomainVariations('https://api.github.com');
+        
+        expect(variations).toContain('github.com');
+        expect(variations).toContain('.github.com');
+        expect(variations).toContain('www.github.com');
+        expect(variations).toContain('api.github.com');
+        expect(variations).toContain('.api.github.com');
+      });
+
+      it('should handle complex subdomains', () => {
+        const variations = extractDomainVariations('https://staging.api.v2.example.com');
+        
+        expect(variations).toContain('example.com');
+        expect(variations).toContain('.example.com');
+        expect(variations).toContain('www.example.com');
+        expect(variations).toContain('staging.api.v2.example.com');
+        expect(variations).toContain('.staging.api.v2.example.com');
+        expect(variations).toContain('api.v2.example.com');
+        expect(variations).toContain('.api.v2.example.com');
+        expect(variations).toContain('v2.example.com');
+        expect(variations).toContain('.v2.example.com');
+      });
+
+      it('should handle ontime.co.ke (project domain)', () => {
+        const variations = extractDomainVariations('https://ontime.co.ke/cameras');
+        
+        expect(variations).toContain('ontime.co.ke');
+        expect(variations).toContain('.ontime.co.ke');
+        expect(variations).toContain('www.ontime.co.ke');
+        expect(variations.length).toBe(3);
+      });
     });
   });
 });

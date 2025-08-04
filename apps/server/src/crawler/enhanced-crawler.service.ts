@@ -138,6 +138,7 @@ export class EnhancedCrawlerService extends EventEmitter {
     try {
       this.emit('crawl-started', jobId);
       
+      // Use a simpler approach - process URLs continuously without artificial depth barriers
       while (crawlState.urlQueue.size > 0 && crawlState.processedUrls.size < job.maxPages) {
         // Calculate optimal batch size based on remaining capacity
         const remainingPages = job.maxPages - crawlState.processedUrls.size;
@@ -152,7 +153,7 @@ export class EnhancedCrawlerService extends EventEmitter {
         // Remove processed URLs from queue
         urlsToProcess.forEach(url => crawlState.urlQueue.delete(url));
 
-        this.logger.log(`Processing batch of ${urlsToProcess.length} URLs (Depth: ${crawlState.currentDepth})`);
+        this.logger.log(`Processing batch of ${urlsToProcess.length} URLs (Queue: ${crawlState.urlQueue.size})`);
 
         // Process URLs concurrently with enhanced error handling
         const crawlPromises = urlsToProcess.map(url => 
@@ -163,14 +164,6 @@ export class EnhancedCrawlerService extends EventEmitter {
 
         // Update progress
         this.emitProgress(crawlState);
-
-        // Check if we should continue to next depth
-        if (crawlState.currentDepth >= job.maxDepth) {
-          this.logger.log(`Reached max depth ${job.maxDepth}, stopping crawl`);
-          break;
-        }
-
-        crawlState.currentDepth++;
         
         // Brief pause between batches to be respectful
         if (crawlState.urlQueue.size > 0) {
@@ -558,7 +551,9 @@ export class EnhancedCrawlerService extends EventEmitter {
   private addDiscoveredUrlsEnhanced(links: string[], parentUrl: string, crawlState: any): void {
     const { job, urlQueue, processedUrls } = crawlState;
     let addedCount = 0;
-    const maxNewUrls = Math.min(50, job.maxPages - processedUrls.size); // Limit new URLs per page
+    const maxNewUrls = Math.min(100, job.maxPages - processedUrls.size); // Increased limit per page
+
+    this.logger.debug(`Discovering URLs from ${parentUrl}: found ${links.length} links`);
 
     for (const link of links) {
       if (addedCount >= maxNewUrls) break;
@@ -570,46 +565,56 @@ export class EnhancedCrawlerService extends EventEmitter {
 
       // Check if we've reached the page limit
       if (processedUrls.size + urlQueue.size >= job.maxPages) {
+        this.logger.debug(`Reached max pages limit (${job.maxPages})`);
         break;
       }
 
-      // Check depth limit
-      const linkDepth = getUrlDepth(link, job.urls[0]);
-      if (linkDepth > job.maxDepth) {
+      // Skip non-HTTP(S) URLs early
+      if (!link.startsWith('http://') && !link.startsWith('https://')) {
         continue;
       }
 
-      // Check domain restrictions
+      // Check domain restrictions first
       if (job.allowedDomains && !isAllowedDomain(link, job.allowedDomains)) {
+        this.logger.debug(`URL ${link} filtered out - not in allowed domains`);
         continue;
       }
 
-      // Check include/exclude patterns
+      // Check exclude patterns early
       if (job.excludePatterns && matchesPatterns(link, job.excludePatterns)) {
+        this.logger.debug(`URL ${link} filtered out - matches exclude pattern`);
         continue;
       }
 
+      // Check include patterns if specified
       if (job.includePatterns && !matchesPatterns(link, job.includePatterns)) {
+        this.logger.debug(`URL ${link} filtered out - doesn't match include pattern`);
         continue;
       }
 
       // Skip common non-content URLs for better performance
       if (this.shouldSkipUrl(link)) {
+        this.logger.debug(`URL ${link} filtered out - should skip`);
         continue;
       }
 
-      // Skip non-HTTP(S) URLs
-      if (!link.startsWith('http://') && !link.startsWith('https://')) {
+      // Check depth limit - be more permissive
+      const linkDepth = getUrlDepth(link, job.urls[0]);
+      if (linkDepth > job.maxDepth) {
+        this.logger.debug(`URL ${link} filtered out - depth ${linkDepth} > max ${job.maxDepth}`);
         continue;
       }
 
       // Add to queue
       urlQueue.add(link);
       addedCount++;
+      this.logger.debug(`Added URL to queue: ${link} (depth: ${linkDepth})`);
     }
 
     if (addedCount > 0) {
       this.logger.debug(`Added ${addedCount} new URLs to queue from ${parentUrl}`);
+    } else {
+      this.logger.debug(`No new URLs added from ${parentUrl} (${links.length} links checked)`);
     }
   }
 
@@ -618,22 +623,32 @@ export class EnhancedCrawlerService extends EventEmitter {
    */
   private shouldSkipUrl(url: string): boolean {
     const skipPatterns = [
-      /\.(css|js|jpg|jpeg|png|gif|svg|ico|pdf|zip|exe|dmg|woff|woff2|ttf|eot)$/i,
+      // File extensions that shouldn't be crawled
+      /\.(css|js|jpg|jpeg|png|gif|svg|ico|pdf|zip|exe|dmg|woff|woff2|ttf|eot|map)$/i,
+      // Feed and API endpoints
       /\/feed\/?$/i,
       /\/rss\/?$/i,
+      /\/wp-json\//i,
+      /\/api\//i,
+      // Admin areas
       /\/wp-admin\//i,
       /\/admin\//i,
+      // Authentication
       /\/login/i,
       /\/logout/i,
       /\/register/i,
-      /\/search\?/i,
-      /\/tag\//i,
-      /\/category\//i,
+      /\/signup/i,
+      // Non-content URLs
       /mailto:/i,
       /tel:/i,
       /javascript:/i,
+      /^#/,
+      // Query parameters that often indicate dynamic/non-SEO content
+      /\?.*(?:action|ajax|nonce|token)=/i,
     ];
 
+    // Be more permissive with content URLs
+    // Only skip if it clearly matches a skip pattern
     return skipPatterns.some(pattern => pattern.test(url));
   }
 

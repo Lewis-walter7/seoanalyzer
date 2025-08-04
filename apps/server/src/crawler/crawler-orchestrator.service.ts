@@ -65,13 +65,27 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       const crawlJobDto: CrawlJob = {
         id: event.crawlJobId,
         urls: [event.rootUrl],
-        maxDepth: 3,
-        maxPages: 100,
+        maxDepth: 6, // Increased depth for analysis requests
+        maxPages: 200, // Increased page limit
         userAgent: 'SEO-Analyzer-Bot/1.0 (+https://seo-analyzer.com/bot)',
         respectRobotsTxt: true,
         crawlDelay: 1000,
         timeout: 30000,
         retries: 3,
+        concurrency: 3,
+        // Allow all domain variations
+        allowedDomains: this.extractDomainVariations(event.rootUrl),
+        // Minimal exclude patterns to allow maximum content discovery
+        excludePatterns: [
+          '*?add-to-cart=*',
+          '*checkout*',
+          '*wp-admin*', 
+          '*login*',
+          '*register*',
+          '*my-account*',
+          '*?wc-ajax*',
+          '*.js', '*.css', '*.pdf', '*.zip'
+        ],
       };
 
       // Start the crawl async
@@ -105,8 +119,8 @@ export class CrawlerOrchestratorService implements OnModuleInit {
         data: {
           projectId: event.projectId,
           status: 'QUEUED', // Using QUEUED as the initial status from schema enum
-          maxPages: 100, // Default values
-          maxDepth: 3,
+          maxPages: 200, // Increased default values
+          maxDepth: 6, // Increased depth to discover more subroutes
           userAgent: 'SEO-Analyzer-Bot/1.0 (+https://seo-analyzer.com/bot)',
         },
       });
@@ -117,17 +131,27 @@ export class CrawlerOrchestratorService implements OnModuleInit {
       const crawlJobDto: CrawlJob = {
         id: crawlJobRecord.id,
         urls: [event.rootUrl], // Use the rootUrl from the event
-        maxDepth: crawlJobRecord.maxDepth || 4, // Increase depth to find more content
-        maxPages: crawlJobRecord.maxPages || 50, // Reasonable limit for testing
+        maxDepth: crawlJobRecord.maxDepth || 6, // Increased depth to find more subroutes
+        maxPages: crawlJobRecord.maxPages || 200, // Increased limit to crawl more pages
         userAgent: crawlJobRecord.userAgent || 'SEO-Analyzer-Bot/1.0 (+https://seo-analyzer.com/bot)',
         respectRobotsTxt: true,
-        crawlDelay: 2000, // 2 second delay to be respectful
+        crawlDelay: 1000, // Reduced delay for faster crawling
         timeout: 30000, // 30 seconds timeout
         retries: 3,
-        // Allow all domain variations
+        concurrency: 3, // Allow multiple concurrent requests
+        // Allow all domain variations - more permissive
         allowedDomains: this.extractDomainVariations(event.rootUrl),
-        // Exclude cart URLs to focus on content pages
-        excludePatterns: ['*add-to-cart*', '*?wc-ajax*', '*wp-admin*', '*wp-json*'],
+        // Minimal exclude patterns to allow maximum content discovery
+        excludePatterns: [
+          '*?add-to-cart=*',
+          '*checkout*',
+          '*wp-admin*', 
+          '*login*',
+          '*register*',
+          '*my-account*',
+          '*?wc-ajax*',
+          '*.js', '*.css', '*.pdf', '*.zip'
+        ],
       };
 
       this.logger.log(`Starting crawl for project ${event.projectName} (${event.rootUrl})`);
@@ -577,6 +601,21 @@ this.logger.debug(`Page info: status=${page.statusCode}, responseTime=${page.loa
       if (hostname.startsWith('www.')) {
         variations.push(hostname.replace(/^www\./, ''));
       }
+      
+      // Add common subdomain variations that might be relevant
+      const baseHostname = hostname.replace(/^www\./, '');
+      const commonSubdomains = [
+        'shop', 'store', 'blog', 'news', 'support', 'help', 'docs', 
+        'api', 'app', 'mobile', 'm', 'cdn', 'media', 'static', 'assets',
+        'staging', 'dev', 'test', 'beta', 'admin', 'portal'
+      ];
+      
+      commonSubdomains.forEach(subdomain => {
+        const subdomainUrl = `${subdomain}.${baseHostname}`;
+        if (!variations.includes(subdomainUrl)) {
+          variations.push(subdomainUrl);
+        }
+      });
       
       this.logger.debug(`Domain variations for ${rootUrl}: ${variations.join(', ')}`);
       return variations;

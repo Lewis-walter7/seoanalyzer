@@ -6,6 +6,7 @@ import { AuditResultsLayout, type ProjectInfo } from '@/app/components/audit/Aud
 import { type AuditResult, type SeoMetric } from '@/app/components/audit/AuditResultCard';
 import { type SeoStatus } from '@/components/ui/seo-badge';
 import { api } from '@/lib/api';
+import { use } from 'react';
 
 // API Response Types based on backend structure
 interface ApiAuditPage {
@@ -55,6 +56,7 @@ interface ApiProjectResponse {
 export type AuditResponse = {
   audits: ApiAuditResponse[];
 }
+
 // Data transformer for real API data
 const transformAuditData = (
   projectData: ApiProjectResponse,
@@ -160,6 +162,7 @@ async function fetchAuditData(projectId: string) {
     
     // Fetch audit data from the Next.js API route
     const auditsResponse = await api.getAuditData(projectId);
+    console.log(JSON.stringify(auditsResponse, null, 2));
     console.log('Audits Response:', auditsResponse);
     
     if (!auditsResponse.audits) {
@@ -193,13 +196,15 @@ function useAuditResults(projectId: string) {
 }
 
 interface AuditResultsProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 function AuditResults({ params }: AuditResultsProps) {
-  const { data: apiData, error, isLoading } = useAuditResults(params.id);
+  // Await the params before using them - this is the key fix
+  const resolvedParams = use(params);
+  const { data: apiData, error, isLoading } = useAuditResults(resolvedParams.id);
   console.log('API Data:', apiData);
 
   // Handle loading state

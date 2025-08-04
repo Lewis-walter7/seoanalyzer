@@ -11,7 +11,7 @@ model Project {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   url         String
-  domain      String   @unique
+  domain      String   
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -153,6 +153,7 @@ model SeoAudit {
   internalLinks String[]
   externalLinks String[]
   brokenLinks   String[]
+  issues      String[] // Any specific issues found
 
   // Performance metrics
   loadTime Int? // in milliseconds

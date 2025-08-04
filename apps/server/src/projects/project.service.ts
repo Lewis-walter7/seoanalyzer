@@ -368,18 +368,19 @@ export class ProjectService {
               url: true,
               title: true,
               crawledAt: true,
+              crawlJobId: true,
             },
           },
         },
         orderBy: { createdAt: 'desc' },
       });
 
-      // Group the audits by creation date (audit sessions)
+      // Group the audits by crawl job (audit sessions)
       const auditMap = new Map<string, { id: string; createdAt: Date; pages: SeoAuditPage[] }>();
 
       for (const audit of seoAudits) {
-        const auditDate = audit.createdAt.toDateString();
-        const auditId = audit.id;
+        const crawlJobId = audit.page.crawlJobId;
+        const auditId = crawlJobId; // Use crawlJobId as the audit session ID
         
         // For each Page, select SEO metrics: titleTag, metaDescription, h1Count, imgMissingAlt, totalLinks, performanceScore, etc.
         const seoAuditPage: SeoAuditPage = {
@@ -404,15 +405,15 @@ export class ProjectService {
           crawledAt: audit.page.crawledAt,
         };
 
-        if (!auditMap.has(auditDate)) {
-          auditMap.set(auditDate, {
+        if (!auditMap.has(crawlJobId)) {
+          auditMap.set(crawlJobId, {
             id: auditId,
             createdAt: audit.createdAt,
             pages: [],
           });
         }
 
-        auditMap.get(auditDate)!.pages.push(seoAuditPage);
+        auditMap.get(crawlJobId)!.pages.push(seoAuditPage);
       }
 
       // Convert map to array and sort by creation date

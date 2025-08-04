@@ -30,12 +30,6 @@ export declare function isValidUrl(url: string): boolean;
  * Extract all URLs from HTML content (focuses on href links for crawling)
  */
 export declare function extractUrls(html: string, baseUrl: string): string[];
-/**
- * Get URL depth relative to a base URL - FIXED VERSION
- */
-/**
- * Get URL depth relative to a base URL - FIXED VERSION
- */
 export declare function getUrlDepth(url: string, baseUrl: string): number;
 /**
  * Check if URL is SEO-valuable (excludes functional URLs that don't provide SEO value)
@@ -57,3 +51,9 @@ export declare function extractSeoUrls(html: string, baseUrl: string): string[];
  * Generate a unique identifier for a URL crawl
  */
 export declare function generateCrawlId(): string;
+/**
+ * Extract domain variations from a URL for comprehensive domain matching
+ * Generates variations including root domain, dot-prefixed domain, www subdomain, and existing subdomains
+ * Uses public suffix list to properly identify the effective top-level domain (eTLD+1)
+ */
+export declare function extractDomainVariations(url: string): string[];
