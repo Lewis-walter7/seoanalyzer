@@ -9,6 +9,5 @@
     "allowImportingTsExtensions": false,
     "types": ["node"]
   },
-  "include": ["src/**/*"],
-  "typeRoots": ["node_modules/@types"],
+  "include": ["src/**/*"]
 }
