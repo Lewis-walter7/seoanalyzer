@@ -15,7 +15,7 @@ var CrawlerController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CrawlerController = exports.UpdateCrawlerOptionsDto = void 0;
 const common_1 = require("@nestjs/common");
-const crawler_service_1 = require("./crawler.service");
+const enhanced_crawler_service_1 = require("./enhanced-crawler.service");
 const create_crawl_job_dto_1 = require("./dto/create-crawl-job.dto");
 const url_util_1 = require("./utils/url.util");
 class UpdateCrawlerOptionsDto {
@@ -247,5 +247,5 @@ __decorate([
 ], CrawlerController.prototype, "healthCheck", null);
 exports.CrawlerController = CrawlerController = CrawlerController_1 = __decorate([
     (0, common_1.Controller)('api/crawler'),
-    __metadata("design:paramtypes", [crawler_service_1.CrawlerService])
+    __metadata("design:paramtypes", [enhanced_crawler_service_1.EnhancedCrawlerService])
 ], CrawlerController);

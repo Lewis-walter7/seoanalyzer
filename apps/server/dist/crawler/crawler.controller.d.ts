@@ -1,5 +1,5 @@
 import { OnModuleInit } from '@nestjs/common';
-import { CrawlerService } from './crawler.service';
+import { EnhancedCrawlerService } from './enhanced-crawler.service';
 import { CrawlResult } from './interfaces/crawler.interfaces';
 import { CreateCrawlJobDto } from './dto/create-crawl-job.dto';
 export declare class UpdateCrawlerOptionsDto {
@@ -13,7 +13,7 @@ export declare class UpdateCrawlerOptionsDto {
 export declare class CrawlerController implements OnModuleInit {
     private readonly crawlerService;
     private readonly logger;
-    constructor(crawlerService: CrawlerService);
+    constructor(crawlerService: EnhancedCrawlerService);
     onModuleInit(): void;
     private setupEventListeners;
     /**

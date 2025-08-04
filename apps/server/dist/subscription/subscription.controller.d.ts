@@ -9,8 +9,8 @@ export declare class SubscriptionController {
     private readonly logger;
     constructor(subscriptionService: SubscriptionService, paymentService: PaymentService);
     getAllPlans(): Promise<{
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         name: string;
@@ -33,9 +33,9 @@ export declare class SubscriptionController {
         hasCustomAlerts: boolean;
         hasDataExport: boolean;
         analysisFrequencies: string[];
-        isActive: boolean;
         isPopular: boolean;
         sortOrder: number;
+        isActive: boolean;
     }[]>;
     initiatePayment(paymentInitiateDto: PaymentInitiateDto, user: AuthenticatedUser): Promise<{
         paymentUrl: string;

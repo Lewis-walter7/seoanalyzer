@@ -53,8 +53,8 @@ export declare class SubscriptionService {
     constructor(prisma: PrismaService);
     getUserById(userId: string): Promise<User>;
     createPlan(createPlanDto: CreateSubscriptionPlanDto, adminUserId: string): Promise<{
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         name: string;
@@ -77,13 +77,13 @@ export declare class SubscriptionService {
         hasCustomAlerts: boolean;
         hasDataExport: boolean;
         analysisFrequencies: string[];
-        isActive: boolean;
         isPopular: boolean;
         sortOrder: number;
+        isActive: boolean;
     }>;
     updatePlan(planId: string, updatePlanDto: Partial<CreateSubscriptionPlanDto>, adminUserId: string): Promise<{
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         name: string;
@@ -106,16 +106,16 @@ export declare class SubscriptionService {
         hasCustomAlerts: boolean;
         hasDataExport: boolean;
         analysisFrequencies: string[];
-        isActive: boolean;
         isPopular: boolean;
         sortOrder: number;
+        isActive: boolean;
     }>;
     deletePlan(planId: string, adminUserId: string): Promise<{
         message: string;
     }>;
     getAllPlans(): Promise<{
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         name: string;
@@ -138,13 +138,13 @@ export declare class SubscriptionService {
         hasCustomAlerts: boolean;
         hasDataExport: boolean;
         analysisFrequencies: string[];
-        isActive: boolean;
         isPopular: boolean;
         sortOrder: number;
+        isActive: boolean;
     }[]>;
     getPlanById(planId: string): Promise<{
-        description: string | null;
         id: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         name: string;
@@ -167,9 +167,9 @@ export declare class SubscriptionService {
         hasCustomAlerts: boolean;
         hasDataExport: boolean;
         analysisFrequencies: string[];
-        isActive: boolean;
         isPopular: boolean;
         sortOrder: number;
+        isActive: boolean;
     }>;
     activateSubscription(userId: string, planId: string, transactionId: string, billingCycle: 'MONTHLY' | 'YEARLY'): Promise<{
         user: {
@@ -188,8 +188,8 @@ export declare class SubscriptionService {
             trialUsed: boolean;
         };
         plan: {
-            description: string | null;
             id: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
             name: string;
@@ -212,37 +212,37 @@ export declare class SubscriptionService {
             hasCustomAlerts: boolean;
             hasDataExport: boolean;
             analysisFrequencies: string[];
-            isActive: boolean;
             isPopular: boolean;
             sortOrder: number;
+            isActive: boolean;
         };
     } & {
-        status: import(".prisma/client").$Enums.SubscriptionStatus;
         id: string;
+        status: import(".prisma/client").$Enums.SubscriptionStatus;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
         planId: string;
-        transactionId: string | null;
         billingCycle: import(".prisma/client").$Enums.BillingCycle;
         startDate: Date;
         endDate: Date;
         cancelledAt: Date | null;
         autoRenew: boolean;
+        transactionId: string | null;
     }>;
     cancelSubscription(userId: string, subscriptionId?: string): Promise<{
-        status: import(".prisma/client").$Enums.SubscriptionStatus;
         id: string;
+        status: import(".prisma/client").$Enums.SubscriptionStatus;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
         planId: string;
-        transactionId: string | null;
         billingCycle: import(".prisma/client").$Enums.BillingCycle;
         startDate: Date;
         endDate: Date;
         cancelledAt: Date | null;
         autoRenew: boolean;
+        transactionId: string | null;
     }>;
     private cancelActiveSubscriptions;
     recordUsage(userId: string, usageType: UsageType, quantity?: number, resourceId?: string, metadata?: any): Promise<{
@@ -260,8 +260,8 @@ export declare class SubscriptionService {
     getCurrentPlanDetails(userId: string): Promise<CurrentPlanDetails | null>;
     getUserSubscriptions(userId: string): Promise<({
         plan: {
-            description: string | null;
             id: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
             name: string;
@@ -284,23 +284,23 @@ export declare class SubscriptionService {
             hasCustomAlerts: boolean;
             hasDataExport: boolean;
             analysisFrequencies: string[];
-            isActive: boolean;
             isPopular: boolean;
             sortOrder: number;
+            isActive: boolean;
         };
     } & {
-        status: import(".prisma/client").$Enums.SubscriptionStatus;
         id: string;
+        status: import(".prisma/client").$Enums.SubscriptionStatus;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
         planId: string;
-        transactionId: string | null;
         billingCycle: import(".prisma/client").$Enums.BillingCycle;
         startDate: Date;
         endDate: Date;
         cancelledAt: Date | null;
         autoRenew: boolean;
+        transactionId: string | null;
     })[]>;
     getSubscriptionById(subscriptionId: string, userId: string): Promise<{
         user: {
@@ -319,8 +319,8 @@ export declare class SubscriptionService {
             trialUsed: boolean;
         };
         plan: {
-            description: string | null;
             id: string;
+            description: string | null;
             createdAt: Date;
             updatedAt: Date;
             name: string;
@@ -343,23 +343,23 @@ export declare class SubscriptionService {
             hasCustomAlerts: boolean;
             hasDataExport: boolean;
             analysisFrequencies: string[];
-            isActive: boolean;
             isPopular: boolean;
             sortOrder: number;
+            isActive: boolean;
         };
     } & {
-        status: import(".prisma/client").$Enums.SubscriptionStatus;
         id: string;
+        status: import(".prisma/client").$Enums.SubscriptionStatus;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
         planId: string;
-        transactionId: string | null;
         billingCycle: import(".prisma/client").$Enums.BillingCycle;
         startDate: Date;
         endDate: Date;
         cancelledAt: Date | null;
         autoRenew: boolean;
+        transactionId: string | null;
     }>;
     private verifyAdminAccess;
     isFeatureAvailable(userId: string, feature: keyof PlanLimits): Promise<boolean>;
