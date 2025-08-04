@@ -15,10 +15,10 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "types": [
-      "jest",
-      "node"
+      "node",
+      "jest"
     ],
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "emitDecoratorMetadata": true
   }
 }
