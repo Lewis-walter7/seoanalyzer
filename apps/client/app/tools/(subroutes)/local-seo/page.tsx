@@ -10,12 +10,12 @@ const Page = () => {
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSeoSubmit = async (formData) => {
+  const handleSeoSubmit = async () => {
     setIsLoading(true);
     // API call will go here
     setTimeout(() => {
       // Mock results
-      setResults({ /* Mock data */ });
+      //setResults({ /* Mock data */ });
       setIsLoading(false);
     }, 2000);
   };

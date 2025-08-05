@@ -113,8 +113,8 @@ const Page = () => {
   useEffect(() => {
     if (analysis) {
       setLivePreview({
-        title: customTitle.trim() || analysis.analysis.title.current || 'No title found',
-        description: customDescription.trim() || analysis.analysis.description.current || 'No description found',
+        title: customTitle.trim() || analysis.title.current || 'No title found',
+        description: customDescription.trim() || analysis.description.current || 'No description found',
         url: url.replace(/^https?:\/\//, '').replace(/\/$/, '')
       });
     }
