@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
 
 
 async function bootstrap() {
@@ -17,6 +18,9 @@ async function bootstrap() {
   
   // Serve static files
   app.useStaticAssets(join(__dirname, '..', 'public'));
+  
+  // Apply global filters
+  app.useGlobalFilters(new PrismaClientExceptionFilter());
   
   // Enable global validation
   app.useGlobalPipes(new ValidationPipe({

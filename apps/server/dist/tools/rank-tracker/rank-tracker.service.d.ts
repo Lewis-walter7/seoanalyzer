@@ -7,10 +7,10 @@ export declare class RankTrackerService {
         keyword: string;
     }): Promise<{
         id: string;
-        projectId: string;
-        createdAt: Date;
-        url: string | null;
         userId: string;
+        createdAt: Date;
+        projectId: string;
+        url: string | null;
         recordedAt: Date;
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;
@@ -24,10 +24,10 @@ export declare class RankTrackerService {
         projectId?: string;
     }): Promise<{
         id: string;
-        projectId: string;
-        createdAt: Date;
-        url: string | null;
         userId: string;
+        createdAt: Date;
+        projectId: string;
+        url: string | null;
         recordedAt: Date;
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;
@@ -39,10 +39,10 @@ export declare class RankTrackerService {
     }[]>;
     findOne(userId: string, id: string): Promise<{
         id: string;
-        projectId: string;
-        createdAt: Date;
-        url: string | null;
         userId: string;
+        createdAt: Date;
+        projectId: string;
+        url: string | null;
         recordedAt: Date;
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;

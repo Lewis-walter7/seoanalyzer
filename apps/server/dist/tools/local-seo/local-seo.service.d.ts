@@ -11,10 +11,10 @@ export declare class LocalSeoService {
         country: string;
     }): Promise<{
         id: string;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
+        projectId: string;
         state: string | null;
         category: string | null;
         businessName: string;
@@ -37,10 +37,10 @@ export declare class LocalSeoService {
         projectId?: string;
     }): Promise<{
         id: string;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
+        projectId: string;
         state: string | null;
         category: string | null;
         businessName: string;
@@ -61,10 +61,10 @@ export declare class LocalSeoService {
     }[]>;
     findOne(userId: string, id: string): Promise<{
         id: string;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
+        projectId: string;
         state: string | null;
         category: string | null;
         businessName: string;

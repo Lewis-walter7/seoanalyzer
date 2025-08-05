@@ -64,6 +64,10 @@ export class AuthService {
       throw new BadRequestException('User already exists with this email');
     }
 
+    if (!password) {
+      throw new BadRequestException('Password is required');
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
@@ -107,9 +111,11 @@ export class AuthService {
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    
+    const safePassword = user.password;
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, safePassword);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }

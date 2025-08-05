@@ -17,7 +17,7 @@ import { ProjectService } from './project.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { User } from '../auth/user.decorator';
 import type { AuthenticatedUser } from '../auth/user.interface';
-import { UsageType } from '../subscription/subscription.service';
+import { UsageType } from '../subscription/subscription.types';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 
 @Controller('v1/projects')

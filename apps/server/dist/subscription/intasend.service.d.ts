@@ -1,62 +1,5 @@
 import IntaSend = require('intasend-node');
-export interface PaymentLinkPayload {
-    amount: number;
-    currency: string;
-    email: string;
-    first_name?: string;
-    last_name?: string;
-    phone_number?: string;
-    redirect_url?: string;
-    webhook_url?: string;
-    api_ref?: string;
-    comment?: string;
-}
-export interface PaymentLinkResponse {
-    id: string;
-    url: string;
-    customer: {
-        id: string;
-        phone_number: string;
-        email: string;
-        first_name: string;
-        last_name: string;
-    };
-    created_at: string;
-    updated_at: string;
-}
-export interface TransactionVerificationResponse {
-    invoice: {
-        id: string;
-        state: string;
-        provider: string;
-        charges: string;
-        net_amount: number;
-        currency: string;
-        value: string;
-        account: string;
-        api_ref: string;
-        mpesa_reference: string;
-        host: string;
-        retry_count: number;
-        failed_reason: string;
-        failed_code: string;
-        failed_code_link: string;
-        created_at: string;
-        updated_at: string;
-    };
-    customer?: {
-        customer_id: string;
-        phone_number: string;
-        email: string;
-        first_name: string;
-        last_name: string;
-        country: string;
-        zipcode: string;
-        provider: string;
-        created_at: string;
-        updated_at: string;
-    };
-}
+import { PaymentLinkPayload, CardChargePayload, PaymentLinkResponse, TransactionVerificationResponse } from './subscription.types';
 export declare class IntaSendService {
     private readonly logger;
     private readonly intasend;
@@ -68,6 +11,7 @@ export declare class IntaSendService {
      * @returns Promise<PaymentLinkResponse>
      */
     createPaymentLink(payload: PaymentLinkPayload): Promise<PaymentLinkResponse>;
+    chargeCard(payload: CardChargePayload): Promise<any>;
     /**
      * Verifies webhook signature to ensure the request is from IntaSend
      * @param rawBody Raw request body as received from IntaSend

@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import { SubscriptionService } from './subscription.service';
 import { PaymentService } from './payment.service';
-import { PaymentInitiateDto, IntaSendWebhookDto, SubscriptionUsageDto } from './dto/subscription.dto';
+import { PaymentInitiateDto, IntaSendWebhookDto, SubscriptionUsageDto } from './subscription.types';
 import type { AuthenticatedUser } from '../auth/user.interface';
 export declare class SubscriptionController {
     private readonly subscriptionService;
@@ -10,15 +10,13 @@ export declare class SubscriptionController {
     constructor(subscriptionService: SubscriptionService, paymentService: PaymentService);
     getAllPlans(): Promise<{
         id: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
-        intasendCustomerId: string | null;
         displayName: string;
+        description: string | null;
         priceMonthly: number;
         priceYearly: number | null;
         intasendPaymentLink: string | null;
+        intasendCustomerId: string | null;
         maxProjects: number;
         maxKeywords: number;
         maxAnalysesPerMonth: number;
@@ -33,17 +31,21 @@ export declare class SubscriptionController {
         hasCustomAlerts: boolean;
         hasDataExport: boolean;
         analysisFrequencies: string[];
+        isActive: boolean;
         isPopular: boolean;
         sortOrder: number;
-        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     initiatePayment(paymentInitiateDto: PaymentInitiateDto, user: AuthenticatedUser): Promise<{
         paymentUrl: string;
     }>;
+    chargeCard(chargeDto: any, // Use a proper DTO here
+    user: AuthenticatedUser): Promise<any>;
     handleWebhook(webhookDto: IntaSendWebhookDto, req: Request): Promise<{
         status: string;
     }>;
-    getMySubscription(user: AuthenticatedUser): Promise<import("./subscription.service").CurrentPlanDetails | null>;
+    getMySubscription(user: AuthenticatedUser): Promise<import("./subscription.types").CurrentPlanDetails | null>;
     recordUsage(usageDto: SubscriptionUsageDto, user: AuthenticatedUser): Promise<{
         success: boolean;
         usageId: string;

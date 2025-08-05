@@ -79,12 +79,12 @@ export declare class AuthController {
         message: string;
         sessions: {
             id: string;
-            createdAt: Date;
             accessTokenExp: Date;
             refreshTokenExp: Date;
             lastUsedAt: Date;
             deviceInfo: string | null;
             ipAddress: string | null;
+            createdAt: Date;
         }[];
     }>;
     /**

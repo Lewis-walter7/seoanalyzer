@@ -1,6 +1,7 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
-import { SubscriptionService, UsageType } from '../subscription/subscription.service';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { UsageType } from '../subscription/subscription.types';
 export interface CreateProjectDto {
     name: string;
     url: string;

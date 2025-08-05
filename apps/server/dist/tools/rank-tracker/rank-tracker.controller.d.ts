@@ -8,10 +8,10 @@ export declare class RankTrackerController {
         keyword: string;
     }): Promise<{
         id: string;
-        projectId: string;
-        createdAt: Date;
-        url: string | null;
         userId: string;
+        createdAt: Date;
+        projectId: string;
+        url: string | null;
         recordedAt: Date;
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;
@@ -23,10 +23,10 @@ export declare class RankTrackerController {
     }>;
     getAllRankTrackers(user: AuthenticatedUser, projectId?: string): Promise<{
         id: string;
-        projectId: string;
-        createdAt: Date;
-        url: string | null;
         userId: string;
+        createdAt: Date;
+        projectId: string;
+        url: string | null;
         recordedAt: Date;
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;
@@ -38,10 +38,10 @@ export declare class RankTrackerController {
     }[]>;
     getRankTracker(user: AuthenticatedUser, id: string): Promise<{
         id: string;
-        projectId: string;
-        createdAt: Date;
-        url: string | null;
         userId: string;
+        createdAt: Date;
+        projectId: string;
+        url: string | null;
         recordedAt: Date;
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;

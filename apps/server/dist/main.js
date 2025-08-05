@@ -5,6 +5,7 @@ const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
 const path_1 = require("path");
+const prisma_client_exception_filter_1 = require("./common/filters/prisma-client-exception.filter");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     // Enable CORS for development - allow Next.js origin
@@ -14,6 +15,8 @@ async function bootstrap() {
     });
     // Serve static files
     app.useStaticAssets((0, path_1.join)(__dirname, '..', 'public'));
+    // Apply global filters
+    app.useGlobalFilters(new prisma_client_exception_filter_1.PrismaClientExceptionFilter());
     // Enable global validation
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,

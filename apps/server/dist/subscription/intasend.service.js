@@ -12,6 +12,7 @@ var IntaSendService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IntaSendService = void 0;
 const common_1 = require("@nestjs/common");
+const service_unavailable_exception_1 = require("../common/exceptions/service-unavailable.exception");
 const IntaSend = require("intasend-node");
 const crypto = require("crypto");
 let IntaSendService = IntaSendService_1 = class IntaSendService {
@@ -59,8 +60,27 @@ let IntaSendService = IntaSendService_1 = class IntaSendService {
             return response;
         }
         catch (error) {
-            this.logger.error('Failed to create payment link', error);
-            throw new Error(`Failed to create payment link: ${error.message}`);
+            this.logger.error('[PaymentLinkCreate]', error?.message, error?.stack);
+            // Check if it's a client error (4xx) or server error (5xx)
+            if (error?.response?.status >= 400 && error?.response?.status < 500) {
+                throw new common_1.BadRequestException(`Invalid payment request: ${error?.message}`);
+            }
+            throw new service_unavailable_exception_1.ServiceUnavailableException(`Payment service temporarily unavailable: ${error?.message}`);
+        }
+    }
+    async chargeCard(payload) {
+        if (!this.intasend) {
+            throw new Error('IntaSend client not initialized.');
+        }
+        try {
+            this.logger.log(`Charging card for amount: ${payload.amount} ${payload.currency}`);
+            // Note: Card charging might need different API approach based on IntaSend SDK version
+            // For now, we'll disable this functionality until proper API method is confirmed
+            throw new service_unavailable_exception_1.ServiceUnavailableException('Direct card charging is not currently supported');
+        }
+        catch (error) {
+            this.logger.error('[CardCharge]', error.message, error.stack);
+            throw new service_unavailable_exception_1.ServiceUnavailableException(`Card charge failed: ${error.message}`);
         }
     }
     /**
@@ -92,7 +112,7 @@ let IntaSendService = IntaSendService_1 = class IntaSendService {
             return isValid;
         }
         catch (error) {
-            this.logger.error('Error verifying webhook signature:', error);
+            this.logger.error('[WebhookSignatureVerify]', error.message, error.stack);
             return false;
         }
     }
@@ -113,8 +133,12 @@ let IntaSendService = IntaSendService_1 = class IntaSendService {
             return response;
         }
         catch (error) {
-            this.logger.error(`Failed to verify transaction ${txnId}`, error);
-            throw new Error(`Failed to verify transaction: ${error.message}`);
+            this.logger.error('[TransactionVerify]', error.message, error.stack);
+            // Check if it's a client error (4xx) or server error (5xx)
+            if (error.response?.status >= 400 && error.response?.status < 500) {
+                throw new common_1.BadRequestException(`Invalid transaction ID or request: ${error.message}`);
+            }
+            throw new service_unavailable_exception_1.ServiceUnavailableException(`Transaction verification service temporarily unavailable: ${error?.message || 'Unknown error'}`);
         }
     }
     /**
@@ -155,7 +179,7 @@ let IntaSendService = IntaSendService_1 = class IntaSendService {
             return true;
         }
         catch (error) {
-            this.logger.error('IntaSend health check failed', error);
+            this.logger.error('[IntaSendHealthCheck]', error.message, error.stack);
             return false;
         }
     }

@@ -2,6 +2,17 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model IntaSendWebhookEvent {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceId   String   @map("invoice_id")
+  signature   String
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([invoiceId])
+  @@map("intasend_webhook_events")
+}
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
@@ -436,10 +447,11 @@ model Transaction {
   plan   SubscriptionPlan @relation(fields: [planId], references: [id])
 
   // Transaction Details
-  amount      Int // Amount in cents
-  currency    String            @default("KES")
-  status      TransactionStatus @default(PENDING)
-  providerRef String? // IntaSend transaction reference
+  amount       Int // Amount in cents
+  currency     String            @default("KES")
+  status       TransactionStatus @default(PENDING)
+  providerRef  String? // IntaSend transaction reference
+  billingCycle BillingCycle      @default(MONTHLY)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -743,7 +755,6 @@ enum SubscriptionStatus {
 enum BillingCycle {
   MONTHLY
   YEARLY
-  LIFETIME
 }
 
 enum TransactionStatus {

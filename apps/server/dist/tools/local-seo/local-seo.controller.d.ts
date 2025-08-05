@@ -12,10 +12,10 @@ export declare class LocalSeoController {
         country: string;
     }): Promise<{
         id: string;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
+        projectId: string;
         state: string | null;
         category: string | null;
         businessName: string;
@@ -36,10 +36,10 @@ export declare class LocalSeoController {
     }>;
     getAllLocalSeo(user: AuthenticatedUser, projectId?: string): Promise<{
         id: string;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
+        projectId: string;
         state: string | null;
         category: string | null;
         businessName: string;
@@ -60,10 +60,10 @@ export declare class LocalSeoController {
     }[]>;
     getLocalSeo(user: AuthenticatedUser, id: string): Promise<{
         id: string;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
+        projectId: string;
         state: string | null;
         category: string | null;
         businessName: string;

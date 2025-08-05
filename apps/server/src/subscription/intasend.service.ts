@@ -1,67 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { ServiceUnavailableException } from '../common/exceptions/service-unavailable.exception';
 import IntaSend = require('intasend-node');
 import * as crypto from 'crypto'; 
-
-export interface PaymentLinkPayload {
-  amount: number;
-  currency: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  phone_number?: string;
-  redirect_url?: string;
-  webhook_url?: string;
-  api_ref?: string;
-  comment?: string;
-}
-
-export interface PaymentLinkResponse {
-  id: string;
-  url: string;
-  customer: {
-    id: string;
-    phone_number: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TransactionVerificationResponse {
-  invoice: {
-    id: string;
-    state: string;
-    provider: string;
-    charges: string;
-    net_amount: number;
-    currency: string;
-    value: string;
-    account: string;
-    api_ref: string;
-    mpesa_reference: string;
-    host: string;
-    retry_count: number;
-    failed_reason: string;
-    failed_code: string;
-    failed_code_link: string;
-    created_at: string;
-    updated_at: string;
-  };
-  customer?: {
-    customer_id: string;
-    phone_number: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    country: string;
-    zipcode: string;
-    provider: string;
-    created_at: string;
-    updated_at: string;
-  };
-}
+import {
+  PaymentLinkPayload,
+  CardChargePayload,
+  PaymentLinkResponse,
+  TransactionVerificationResponse,
+} from './subscription.types';
 
 @Injectable()
 export class IntaSendService {
@@ -115,9 +61,32 @@ export class IntaSendService {
 
       this.logger.log(`Payment link created successfully with ID: ${response.id}`);
       return response;
+    } catch (error: any) {
+      this.logger.error('[PaymentLinkCreate]', error?.message, error?.stack);
+      
+      // Check if it's a client error (4xx) or server error (5xx)
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        throw new BadRequestException(`Invalid payment request: ${error?.message}`);
+      }
+      
+      throw new ServiceUnavailableException(`Payment service temporarily unavailable: ${error?.message}`);
+    }
+  }
+
+  async chargeCard(payload: CardChargePayload): Promise<any> {
+    if (!this.intasend) {
+      throw new Error('IntaSend client not initialized.');
+    }
+
+    try {
+      this.logger.log(`Charging card for amount: ${payload.amount} ${payload.currency}`);
+      
+      // Note: Card charging might need different API approach based on IntaSend SDK version
+      // For now, we'll disable this functionality until proper API method is confirmed
+      throw new ServiceUnavailableException('Direct card charging is not currently supported');
     } catch (error) {
-      this.logger.error('Failed to create payment link', error);
-      throw new Error(`Failed to create payment link: ${(error as Error).message}`);
+      this.logger.error('[CardCharge]', (error as Error).message, (error as Error).stack);
+      throw new ServiceUnavailableException(`Card charge failed: ${(error as Error).message}`);
     }
   }
 
@@ -159,7 +128,7 @@ export class IntaSendService {
 
       return isValid;
     } catch (error) {
-      this.logger.error('Error verifying webhook signature:', error);
+      this.logger.error('[WebhookSignatureVerify]', (error as Error).message, (error as Error).stack);
       return false;
     }
   }
@@ -183,8 +152,14 @@ export class IntaSendService {
       this.logger.log(`Transaction ${txnId} verification completed. Status: ${response.invoice?.state}`);
       return response;
     } catch (error) {
-      this.logger.error(`Failed to verify transaction ${txnId}`, error);
-      throw new Error(`Failed to verify transaction: ${(error as Error).message}`);
+      this.logger.error('[TransactionVerify]', (error as Error).message, (error as Error).stack);
+      
+      // Check if it's a client error (4xx) or server error (5xx)
+      if ((error as any).response?.status >= 400 && (error as any).response?.status < 500) {
+        throw new BadRequestException(`Invalid transaction ID or request: ${(error as any).message}`);
+      }
+      
+      throw new ServiceUnavailableException(`Transaction verification service temporarily unavailable: ${(error as any)?.message || 'Unknown error'}`);
     }
   }
 
@@ -229,7 +204,7 @@ export class IntaSendService {
       
       return true;
     } catch (error) {
-      this.logger.error('IntaSend health check failed', error);
+      this.logger.error('[IntaSendHealthCheck]', (error as Error).message, (error as Error).stack);
       return false;
     }
   }

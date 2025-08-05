@@ -1,11 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isFastifyAuthenticated = exports.isAuthenticated = exports.fastifyRequireAuth = exports.requireAuth = exports.fastifyOptionalAuthenticateJWT = exports.fastifyAuthenticateJWT = exports.optionalAuthenticateJWT = exports.authenticateJWT = exports.AuthService = exports.authService = exports.authRouter = void 0;
+exports.isFastifyAuthenticated = exports.isAuthenticated = exports.fastifyRequireAuth = exports.requireAuth = exports.fastifyOptionalAuthenticateJWT = exports.fastifyAuthenticateJWT = exports.optionalAuthenticateJWT = exports.authenticateJWT = exports.JWTPayload = exports.RegisterCredentials = exports.LoginCredentials = exports.User = exports.AuthService = exports.authService = exports.authRouter = void 0;
 var auth_controller_1 = require("./auth.controller");
 Object.defineProperty(exports, "authRouter", { enumerable: true, get: function () { return auth_controller_1.authRouter; } });
 var auth_service_1 = require("./auth.service");
 Object.defineProperty(exports, "authService", { enumerable: true, get: function () { return auth_service_1.authService; } });
 Object.defineProperty(exports, "AuthService", { enumerable: true, get: function () { return auth_service_1.AuthService; } });
+Object.defineProperty(exports, "User", { enumerable: true, get: function () { return auth_service_1.User; } });
+Object.defineProperty(exports, "LoginCredentials", { enumerable: true, get: function () { return auth_service_1.LoginCredentials; } });
+Object.defineProperty(exports, "RegisterCredentials", { enumerable: true, get: function () { return auth_service_1.RegisterCredentials; } });
+Object.defineProperty(exports, "JWTPayload", { enumerable: true, get: function () { return auth_service_1.JWTPayload; } });
 var auth_middleware_1 = require("./auth.middleware");
 Object.defineProperty(exports, "authenticateJWT", { enumerable: true, get: function () { return auth_middleware_1.authenticateJWT; } });
 Object.defineProperty(exports, "optionalAuthenticateJWT", { enumerable: true, get: function () { return auth_middleware_1.optionalAuthenticateJWT; } });

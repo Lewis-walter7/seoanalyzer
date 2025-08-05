@@ -10,13 +10,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { SubscriptionService, UsageType } from './subscription.service';
+import { SubscriptionService } from './subscription.service';
 import { PaymentService } from './payment.service';
 import {
   PaymentInitiateDto,
   IntaSendWebhookDto,
   SubscriptionUsageDto,
-} from './dto/subscription.dto';
+  UsageType,
+} from './subscription.types';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { Public } from '../auth/public.decorator';
@@ -24,6 +25,7 @@ import { RequireAdmin } from '../auth/admin.decorator';
 import { User } from '../auth/user.decorator';
 import type { AuthenticatedUser } from '../auth/user.interface';
 // import { User } from '../../apps/server/src/modules/auth';
+
 
 @Controller('v1/subscription')
 export class SubscriptionController {
@@ -70,10 +72,11 @@ export class SubscriptionController {
       const safeUser = {
         ...fullUser,
         email: fullUser.email!,
-        password: fullUser.password ?? undefined, 
+        password: fullUser.password ?? null, 
         name: fullUser.name ?? 'User',
       };
 
+      // Handle nullable priceYearly field
       const safePlan = {
         ...plan,
         priceYearly: plan.priceYearly ?? undefined,
@@ -93,30 +96,73 @@ export class SubscriptionController {
     }
   }
 
+  // POST /pay/charge - Process direct card payment
+  @UseGuards(AuthGuard)
+  @Post('pay/charge')
+  async chargeCard(
+    @Body() chargeDto: any, // Use a proper DTO here
+    @User() user: AuthenticatedUser,
+  ) {
+    try {
+      const { planId, billingCycle, card } = chargeDto;
+      this.logger.log(`Charging card for user ${user.id}, plan ${planId}`);
+      
+      const plan = await this.subscriptionService.getPlanById(planId);
+      const fullUser = await this.subscriptionService.getUserById(user.id);
+      
+      const result = await this.paymentService.chargeCard(
+        fullUser,
+        plan,
+        billingCycle,
+        card,
+      );
+      
+      this.logger.log(`Card charge successful for user ${user.id}`);
+      return result;
+    } catch (error) {
+      this.logger.error('Error charging card', error);
+      throw error;
+    }
+  }
+
   // POST /intasend/webhook - Handle IntaSend webhook notifications
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('intasend/webhook')
   async handleWebhook(@Body() webhookDto: IntaSendWebhookDto, @Req() req: Request) {
-    try {
-      this.logger.log(`Received IntaSend webhook for invoice ${webhookDto.invoice_id}`);
-      
-      // Get signature from headers
-      const signature = req.headers['x-intasend-signature'] as string;
-      
-      await this.paymentService.handleWebhook({
-        provider: 'intasend',
-        rawBody: req.body || JSON.stringify(webhookDto),
-        signature,
-        ...webhookDto,
-      });
-      
-      this.logger.log(`Webhook processed successfully for invoice ${webhookDto.invoice_id}`);
-      return { status: 'success' };
-    } catch (error) {
-      this.logger.error('Error handling webhook', error);
-      throw error;
-    }
+    // Return HTTP 200 quickly - webhook processing happens in background
+    const responsePromise = Promise.resolve({ status: 'received' });
+
+    // Process webhook asynchronously to ensure quick response
+    setImmediate(async () => {
+      try {
+        this.logger.log(`Received IntaSend webhook for invoice ${webhookDto.invoice_id}`);
+        
+        // Get signature from headers - IntaSend uses x-intasend-signature
+        const signature = req.headers['x-intasend-signature'] as string;
+        
+        if (!signature) {
+          this.logger.warn(`Missing x-intasend-signature header for invoice ${webhookDto.invoice_id}`);
+          return;
+        }
+
+        // Get raw body for signature verification
+        const rawBody = (req as any).rawBody || JSON.stringify(webhookDto);
+        
+        await this.paymentService.handleWebhook({
+          ...webhookDto,
+          rawBody,
+          signature,
+        });
+        
+        this.logger.log(`Webhook processed successfully for invoice ${webhookDto.invoice_id}`);
+      } catch (error) {
+        this.logger.error(`Critical error processing webhook for invoice ${webhookDto.invoice_id}:`, error);
+        // Error is logged but not thrown to prevent webhook retry loops
+      }
+    });
+
+    return responsePromise;
   }
 
   // GET /me - Get current user's subscription and usage details

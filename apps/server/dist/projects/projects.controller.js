@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const project_service_1 = require("./project.service");
 const auth_guard_1 = require("../auth/auth.guard");
 const user_decorator_1 = require("../auth/user.decorator");
-const subscription_service_1 = require("../subscription/subscription.service");
+const subscription_types_1 = require("../subscription/subscription.types");
 const project_dto_1 = require("./dto/project.dto");
 let ProjectsController = class ProjectsController {
     projectService;
@@ -29,7 +29,7 @@ let ProjectsController = class ProjectsController {
     }
     async createProject(user, createProjectDto) {
         const project = await this.projectService.createProject(user.id, createProjectDto);
-        await this.projectService.recordUsage(user.id, subscription_service_1.UsageType.PROJECT_CREATED);
+        await this.projectService.recordUsage(user.id, subscription_types_1.UsageType.PROJECT_CREATED);
         return project;
     }
     async getProject(user, projectId) {

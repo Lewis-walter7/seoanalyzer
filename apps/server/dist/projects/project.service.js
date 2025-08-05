@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const prisma_service_1 = require("../prisma/prisma.service");
 const subscription_service_1 = require("../subscription/subscription.service");
+const subscription_types_1 = require("../subscription/subscription.types");
 const project_created_event_1 = require("./events/project-created.event");
 let ProjectService = class ProjectService {
     prisma;
@@ -221,7 +222,7 @@ let ProjectService = class ProjectService {
             };
         }
         // Record usage for analysis
-        await this.recordUsage(userId, subscription_service_1.UsageType.ANALYSIS_RUN);
+        await this.recordUsage(userId, subscription_types_1.UsageType.ANALYSIS_RUN);
         // Create a new crawl job
         const crawlJob = await this.prisma.crawlJob.create({
             data: {

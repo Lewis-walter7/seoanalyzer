@@ -1,56 +1,13 @@
 import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateSubscriptionPlanDto, SubscriptionUsageDto } from './dto/subscription.dto';
+import {
+  CreateSubscriptionPlanDto,
+  SubscriptionUsageDto,
+  PlanLimits,
+  CurrentPlanDetails,
+  UsageType,
+} from './subscription.types';
 import { SubscriptionStatus, User } from '@prisma/client';
-
-export interface PlanLimits {
-  maxProjects: number;
-  maxKeywords: number;
-  maxAnalysesPerMonth: number;
-  maxReportsPerMonth: number;
-  maxCompetitors: number;
-  hasAdvancedReports?: boolean;
-  hasAPIAccess?: boolean;
-  hasWhiteLabel?: boolean;
-  hasCustomBranding?: boolean;
-  hasPrioritySupport?: boolean;
-  hasTeamCollaboration?: boolean;
-  hasCustomAlerts?: boolean;
-  hasDataExport?: boolean;
-}
-
-export interface CurrentPlanDetails {
-  plan: any;
-  subscription: any;
-  remainingQuota: {
-    projects: number;
-    keywords: number;
-    analyses: number;
-    reports: number;
-    competitors: number;
-  };
-  usageThisPeriod: {
-    projects: number;
-    keywords: number;
-    analyses: number;
-    reports: number;
-    competitors: number;
-    apiCalls: number;
-    exports: number;
-    alerts: number;
-  };
-}
-
-export enum UsageType {
-  PROJECT_CREATED = 'PROJECT_CREATED',
-  ANALYSIS_RUN = 'ANALYSIS_RUN',
-  REPORT_GENERATED = 'REPORT_GENERATED',
-  KEYWORD_TRACKED = 'KEYWORD_TRACKED',
-  API_CALL = 'API_CALL',
-  COMPETITOR_ADDED = 'COMPETITOR_ADDED',
-  EXPORT_DATA = 'EXPORT_DATA',
-  CUSTOM_ALERT = 'CUSTOM_ALERT'
-}
 
 @Injectable()
 export class SubscriptionService {

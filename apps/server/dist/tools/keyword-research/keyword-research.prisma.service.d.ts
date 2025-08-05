@@ -2,12 +2,12 @@ import { Prisma } from '@prisma/client';
 export declare class KeywordResearchPrismaService {
     createKeywordResearch(prisma: Prisma.TransactionClient, data: Prisma.KeywordResearchCreateInput): Promise<{
         id: string;
-        description: string | null;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        userId: string;
+        description: string | null;
+        projectId: string;
         seedKeywords: string[];
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;
@@ -16,12 +16,12 @@ export declare class KeywordResearchPrismaService {
     }>;
     getKeywordResearch(prisma: Prisma.TransactionClient, id: string): Promise<{
         id: string;
-        description: string | null;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        userId: string;
+        description: string | null;
+        projectId: string;
         seedKeywords: string[];
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;
@@ -30,12 +30,12 @@ export declare class KeywordResearchPrismaService {
     } | null>;
     updateKeywordResearch(prisma: Prisma.TransactionClient, id: string, data: Prisma.KeywordResearchUpdateInput): Promise<{
         id: string;
-        description: string | null;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        userId: string;
+        description: string | null;
+        projectId: string;
         seedKeywords: string[];
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;
@@ -44,12 +44,12 @@ export declare class KeywordResearchPrismaService {
     }>;
     deleteKeywordResearch(prisma: Prisma.TransactionClient, id: string): Promise<{
         id: string;
-        description: string | null;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        userId: string;
+        description: string | null;
+        projectId: string;
         seedKeywords: string[];
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;
@@ -64,12 +64,12 @@ export declare class KeywordResearchPrismaService {
         orderBy?: Prisma.KeywordResearchOrderByWithRelationInput;
     }): Promise<{
         id: string;
-        description: string | null;
-        projectId: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        userId: string;
+        description: string | null;
+        projectId: string;
         seedKeywords: string[];
         searchEngine: import(".prisma/client").$Enums.SearchEngine;
         location: string;

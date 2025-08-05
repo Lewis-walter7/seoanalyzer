@@ -39,6 +39,9 @@ let AuthService = class AuthService {
         if (existingUser) {
             throw new common_1.BadRequestException('User already exists with this email');
         }
+        if (!password) {
+            throw new common_1.BadRequestException('Password is required');
+        }
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
         // Create user
@@ -77,8 +80,9 @@ let AuthService = class AuthService {
         if (!user || !user.password) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        const safePassword = user.password;
         // Verify password
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, safePassword);
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }

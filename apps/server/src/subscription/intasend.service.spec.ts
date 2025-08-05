@@ -13,7 +13,8 @@ const MockIntaSend = jest.fn().mockImplementation(() => mockIntaSendInstance);
 jest.mock('intasend-node', () => MockIntaSend);
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { IntaSendService, PaymentLinkPayload, PaymentLinkResponse } from './intasend.service';
+import { IntaSendService } from './intasend.service';
+import { PaymentLinkPayload, PaymentLinkResponse } from './subscription.types';
 
 describe('IntaSendService', () => {
   let service: IntaSendService;
@@ -162,7 +163,7 @@ describe('IntaSendService', () => {
         invoice: {
           id: 'invoice_123',
           state: 'COMPLETED',
-          provider: 'MPESA',
+          provider: 'CARD',
           charges: '30',
           net_amount: 970,
           currency: 'KES',
@@ -186,7 +187,7 @@ describe('IntaSendService', () => {
           last_name: 'Doe',
           country: 'KE',
           zipcode: '00100',
-          provider: 'MPESA',
+          provider: 'CARD',
           created_at: '2023-12-01T09:00:00Z',
           updated_at: '2023-12-01T09:00:00Z',
         },

@@ -10,21 +10,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var SubscriptionService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SubscriptionService = exports.UsageType = void 0;
+exports.SubscriptionService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const subscription_types_1 = require("./subscription.types");
 const client_1 = require("@prisma/client");
-var UsageType;
-(function (UsageType) {
-    UsageType["PROJECT_CREATED"] = "PROJECT_CREATED";
-    UsageType["ANALYSIS_RUN"] = "ANALYSIS_RUN";
-    UsageType["REPORT_GENERATED"] = "REPORT_GENERATED";
-    UsageType["KEYWORD_TRACKED"] = "KEYWORD_TRACKED";
-    UsageType["API_CALL"] = "API_CALL";
-    UsageType["COMPETITOR_ADDED"] = "COMPETITOR_ADDED";
-    UsageType["EXPORT_DATA"] = "EXPORT_DATA";
-    UsageType["CUSTOM_ALERT"] = "CUSTOM_ALERT";
-})(UsageType || (exports.UsageType = UsageType = {}));
 let SubscriptionService = SubscriptionService_1 = class SubscriptionService {
     prisma;
     logger = new common_1.Logger(SubscriptionService_1.name);
@@ -281,10 +271,10 @@ let SubscriptionService = SubscriptionService_1 = class SubscriptionService {
                 // No active subscription - allow limited free usage
                 // For testing purposes, allow basic operations
                 switch (usageType) {
-                    case UsageType.ANALYSIS_RUN:
+                    case subscription_types_1.UsageType.ANALYSIS_RUN:
                         return true; // Temporarily allow unlimited runs for testing
-                    case UsageType.PROJECT_CREATED:
-                    case UsageType.REPORT_GENERATED:
+                    case subscription_types_1.UsageType.PROJECT_CREATED:
+                    case subscription_types_1.UsageType.REPORT_GENERATED:
                         return true; // Allow free basic usage
                     default:
                         return false; // Restrict premium features
@@ -299,21 +289,21 @@ let SubscriptionService = SubscriptionService_1 = class SubscriptionService {
             // Check limits based on usage type
             const plan = subscription.plan;
             switch (usageType) {
-                case UsageType.PROJECT_CREATED:
+                case subscription_types_1.UsageType.PROJECT_CREATED:
                     return (currentUsage.projects + additionalQuantity) <= plan.maxProjects;
-                case UsageType.ANALYSIS_RUN:
+                case subscription_types_1.UsageType.ANALYSIS_RUN:
                     return (currentUsage.analyses + additionalQuantity) <= plan.maxAnalysesPerMonth;
-                case UsageType.REPORT_GENERATED:
+                case subscription_types_1.UsageType.REPORT_GENERATED:
                     return (currentUsage.reports + additionalQuantity) <= plan.maxReportsPerMonth;
-                case UsageType.KEYWORD_TRACKED:
+                case subscription_types_1.UsageType.KEYWORD_TRACKED:
                     return (currentUsage.keywords + additionalQuantity) <= plan.maxKeywords;
-                case UsageType.COMPETITOR_ADDED:
+                case subscription_types_1.UsageType.COMPETITOR_ADDED:
                     return (currentUsage.competitors + additionalQuantity) <= plan.maxCompetitors;
-                case UsageType.API_CALL:
+                case subscription_types_1.UsageType.API_CALL:
                     return plan.hasAPIAccess || false;
-                case UsageType.EXPORT_DATA:
+                case subscription_types_1.UsageType.EXPORT_DATA:
                     return plan.hasDataExport || false;
-                case UsageType.CUSTOM_ALERT:
+                case subscription_types_1.UsageType.CUSTOM_ALERT:
                     return plan.hasCustomAlerts || false;
                 default:
                     return true;
@@ -352,28 +342,28 @@ let SubscriptionService = SubscriptionService_1 = class SubscriptionService {
         usageRecords.forEach(record => {
             const quantity = record._sum.quantity || 0;
             switch (record.usageType) {
-                case UsageType.PROJECT_CREATED:
+                case subscription_types_1.UsageType.PROJECT_CREATED:
                     usage.projects = quantity;
                     break;
-                case UsageType.KEYWORD_TRACKED:
+                case subscription_types_1.UsageType.KEYWORD_TRACKED:
                     usage.keywords = quantity;
                     break;
-                case UsageType.ANALYSIS_RUN:
+                case subscription_types_1.UsageType.ANALYSIS_RUN:
                     usage.analyses = quantity;
                     break;
-                case UsageType.REPORT_GENERATED:
+                case subscription_types_1.UsageType.REPORT_GENERATED:
                     usage.reports = quantity;
                     break;
-                case UsageType.COMPETITOR_ADDED:
+                case subscription_types_1.UsageType.COMPETITOR_ADDED:
                     usage.competitors = quantity;
                     break;
-                case UsageType.API_CALL:
+                case subscription_types_1.UsageType.API_CALL:
                     usage.apiCalls = quantity;
                     break;
-                case UsageType.EXPORT_DATA:
+                case subscription_types_1.UsageType.EXPORT_DATA:
                     usage.exports = quantity;
                     break;
-                case UsageType.CUSTOM_ALERT:
+                case subscription_types_1.UsageType.CUSTOM_ALERT:
                     usage.alerts = quantity;
                     break;
             }

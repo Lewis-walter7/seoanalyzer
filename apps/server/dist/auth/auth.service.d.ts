@@ -71,12 +71,12 @@ export declare class AuthService {
      */
     getUserSessions(userId: string): Promise<{
         id: string;
-        createdAt: Date;
         accessTokenExp: Date;
         refreshTokenExp: Date;
         lastUsedAt: Date;
         deviceInfo: string | null;
         ipAddress: string | null;
+        createdAt: Date;
     }[]>;
     /**
      * Revoke a specific session

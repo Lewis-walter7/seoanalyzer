@@ -17,7 +17,7 @@ exports.SubscriptionController = void 0;
 const common_1 = require("@nestjs/common");
 const subscription_service_1 = require("./subscription.service");
 const payment_service_1 = require("./payment.service");
-const subscription_dto_1 = require("./dto/subscription.dto");
+const subscription_types_1 = require("./subscription.types");
 const auth_guard_1 = require("../auth/auth.guard");
 const admin_guard_1 = require("../auth/admin.guard");
 const public_decorator_1 = require("../auth/public.decorator");
@@ -58,9 +58,10 @@ let SubscriptionController = SubscriptionController_1 = class SubscriptionContro
             const safeUser = {
                 ...fullUser,
                 email: fullUser.email,
-                password: fullUser.password ?? undefined,
+                password: fullUser.password ?? null,
                 name: fullUser.name ?? 'User',
             };
+            // Handle nullable priceYearly field
             const safePlan = {
                 ...plan,
                 priceYearly: plan.priceYearly ?? undefined,
@@ -74,25 +75,51 @@ let SubscriptionController = SubscriptionController_1 = class SubscriptionContro
             throw error;
         }
     }
-    // POST /intasend/webhook - Handle IntaSend webhook notifications
-    async handleWebhook(webhookDto, req) {
+    // POST /pay/charge - Process direct card payment
+    async chargeCard(chargeDto, user) {
         try {
-            this.logger.log(`Received IntaSend webhook for invoice ${webhookDto.invoice_id}`);
-            // Get signature from headers
-            const signature = req.headers['x-intasend-signature'];
-            await this.paymentService.handleWebhook({
-                provider: 'intasend',
-                rawBody: req.body || JSON.stringify(webhookDto),
-                signature,
-                ...webhookDto,
-            });
-            this.logger.log(`Webhook processed successfully for invoice ${webhookDto.invoice_id}`);
-            return { status: 'success' };
+            const { planId, billingCycle, card } = chargeDto;
+            this.logger.log(`Charging card for user ${user.id}, plan ${planId}`);
+            const plan = await this.subscriptionService.getPlanById(planId);
+            const fullUser = await this.subscriptionService.getUserById(user.id);
+            const result = await this.paymentService.chargeCard(fullUser, plan, billingCycle, card);
+            this.logger.log(`Card charge successful for user ${user.id}`);
+            return result;
         }
         catch (error) {
-            this.logger.error('Error handling webhook', error);
+            this.logger.error('Error charging card', error);
             throw error;
         }
+    }
+    // POST /intasend/webhook - Handle IntaSend webhook notifications
+    async handleWebhook(webhookDto, req) {
+        // Return HTTP 200 quickly - webhook processing happens in background
+        const responsePromise = Promise.resolve({ status: 'received' });
+        // Process webhook asynchronously to ensure quick response
+        setImmediate(async () => {
+            try {
+                this.logger.log(`Received IntaSend webhook for invoice ${webhookDto.invoice_id}`);
+                // Get signature from headers - IntaSend uses x-intasend-signature
+                const signature = req.headers['x-intasend-signature'];
+                if (!signature) {
+                    this.logger.warn(`Missing x-intasend-signature header for invoice ${webhookDto.invoice_id}`);
+                    return;
+                }
+                // Get raw body for signature verification
+                const rawBody = req.rawBody || JSON.stringify(webhookDto);
+                await this.paymentService.handleWebhook({
+                    ...webhookDto,
+                    rawBody,
+                    signature,
+                });
+                this.logger.log(`Webhook processed successfully for invoice ${webhookDto.invoice_id}`);
+            }
+            catch (error) {
+                this.logger.error(`Critical error processing webhook for invoice ${webhookDto.invoice_id}:`, error);
+                // Error is logged but not thrown to prevent webhook retry loops
+            }
+        });
+        return responsePromise;
     }
     // GET /me - Get current user's subscription and usage details
     async getMySubscription(user) {
@@ -153,9 +180,18 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __param(1, (0, user_decorator_1.User)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [subscription_dto_1.PaymentInitiateDto, Object]),
+    __metadata("design:paramtypes", [subscription_types_1.PaymentInitiateDto, Object]),
     __metadata("design:returntype", Promise)
 ], SubscriptionController.prototype, "initiatePayment", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.Post)('pay/charge'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, user_decorator_1.User)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], SubscriptionController.prototype, "chargeCard", null);
 __decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
@@ -163,7 +199,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [subscription_dto_1.IntaSendWebhookDto, Object]),
+    __metadata("design:paramtypes", [subscription_types_1.IntaSendWebhookDto, Object]),
     __metadata("design:returntype", Promise)
 ], SubscriptionController.prototype, "handleWebhook", null);
 __decorate([
@@ -180,7 +216,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __param(1, (0, user_decorator_1.User)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [subscription_dto_1.SubscriptionUsageDto, Object]),
+    __metadata("design:paramtypes", [subscription_types_1.SubscriptionUsageDto, Object]),
     __metadata("design:returntype", Promise)
 ], SubscriptionController.prototype, "recordUsage", null);
 __decorate([
