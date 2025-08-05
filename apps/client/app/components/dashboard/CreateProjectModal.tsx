@@ -23,8 +23,15 @@ type CreateProjectFormData = z.infer<typeof createProjectSchema>;
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProjectCreated: (projectData: CreateProjectFormData) => Promise<void>;
+  onProjectCreated: (projectData: {
+    name: string;
+    url: string;
+    description?: string;
+    targetKeywords?: string[];
+    competitors?: string[];
+  }) => Promise<void>;
 }
+
 
 export default function CreateProjectModal({ isOpen, onClose, onProjectCreated }: CreateProjectModalProps) {
   const [currentStep, setCurrentStep] = useState(1);

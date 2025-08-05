@@ -27,6 +27,9 @@ model Project {
   crawlJobs       CrawlJob[]
   analysisReports AnalysisReport[]
   keywordRankings KeywordRanking[]
+  keywordResearch KeywordResearch[]
+  rankHistory     RankHistory[]
+  localListings   LocalListing[]
   seoIssues       SeoIssue[]
   seoAudits       SeoAudit[]
   User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -202,6 +205,92 @@ enum CrawlStatus {
   PAUSED
 }
 
+model KeywordResearch {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  seedKeywords    String[]
+  searchEngine    SearchEngine @default(GOOGLE)
+  location        String @default("Global")
+  language        String @default("en")
+  device          Device @default(DESKTOP)
+
+  // Relations
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String  @db.ObjectId
+  userId    String  @db.ObjectId
+
+  @@map("keyword_research")
+}
+
+model RankHistory {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  keyword         String
+  position        Int
+  previousPosition Int?
+  searchEngine    SearchEngine @default(GOOGLE)
+  location        String @default("Global")
+  language        String @default("en")
+  device          Device @default(DESKTOP)
+  url             String?
+  recordedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  // Relations
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String  @db.ObjectId
+  userId    String  @db.ObjectId
+
+  @@index([projectId, keyword])
+  @@index([recordedAt])
+  @@map("rank_history")
+}
+
+model LocalListing {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessName    String
+  address         String
+  city            String
+  state           String?
+  zipCode         String
+  country         String @default("US")
+  phone           String?
+  website         String?
+  category        String?
+  
+  // NAP (Name, Address, Phone) consistency
+  napScore        Float? // 0-100
+  citationCount   Int @default(0)
+  inconsistentCitationsCount Int @default(0)
+  
+  // Google My Business info
+  googleMyBusinessId String?
+  googleRating       Float?
+  googleReviewCount  Int @default(0)
+  
+  // Local SEO metrics
+  localRankPosition  Int?
+  localSearchVolume  Int?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String  @db.ObjectId
+  userId    String  @db.ObjectId
+
+  @@index([projectId])
+  @@index([city, state])
+  @@map("local_listings")
+}
+
 // User model
 model User {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -230,6 +319,9 @@ model User {
   accounts         Account[]
   sessions         Session[]
   projects         Project[]
+  keywordResearch  KeywordResearch[]
+  rankHistory      RankHistory[]
+  localListings    LocalListing[]
   subscriptions    Subscription[]
   transactions     Transaction[]
   usageRecords     SubscriptionUsage[]

@@ -18,6 +18,11 @@ export default function HomePage() {
     return () => window.removeEventListener('closeSidebar', handleCloseSidebar);
   }, []);
 
+  // Unified toggle handler for mobile navigation
+  const handleSidebarToggle = (open: boolean) => {
+    setSidebarOpen(open);
+  };
+
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white">
       {/* Desktop Sidebar */}
@@ -29,10 +34,10 @@ export default function HomePage() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div 
-            className="absolute inset-0 bg-black bg-opacity-50" 
+            className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300 motion-reduce:transition-none" 
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="relative">
+          <div className="relative transform transition-transform duration-300 motion-reduce:transition-none">
             <Sidebar open={sidebarOpen} selectedProject={selectedProject} />
           </div>
         </div>

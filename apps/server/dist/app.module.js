@@ -15,6 +15,7 @@ const auth_module_1 = require("./auth/auth.module");
 const subscription_module_1 = require("./subscription/subscription.module");
 const config_1 = require("@nestjs/config");
 const projects_module_1 = require("./projects/projects.module");
+const tools_module_1 = require("./tools/tools.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -27,7 +28,8 @@ exports.AppModule = AppModule = __decorate([
             crawler_module_1.CrawlerModule,
             subscription_module_1.SubscriptionModule,
             projects_module_1.ProjectsModule,
-            config_1.ConfigModule.forRoot({ isGlobal: true })
+            config_1.ConfigModule.forRoot({ isGlobal: true }),
+            tools_module_1.ToolsModule
         ],
         controllers: [],
         providers: [],

@@ -1,115 +1,171 @@
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, CreateAxiosDefaults } from 'axios';
 import { AuditResponse } from '@/app/project/[id]/auditresults/page';
 import { tokenStorage, authApi } from './auth-client';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// Enhanced fetch wrapper with authentication and error handling
+// Error mapping interface
+export interface ApiError {
+  message: string;
+  status?: number;
+  code?: string;
+  details?: any;
+}
+
+// Generic API response wrapper
+export interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  message?: string;
+  success?: boolean;
+}
+
+// Transform axios error to standardized format
+const transformError = (error: any): ApiError => {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || error.response?.data?.error || error.message;
+    const code = error.code;
+    
+    return {
+      message,
+      status,
+      code,
+      details: error.response?.data
+    };
+  }
+  
+  return {
+    message: error.message || 'An unexpected error occurred',
+    details: error
+  };
+};
+
+// Enhanced API client with axios
 export class ApiClient {
-  private baseURL: string;
+  private axiosInstance: AxiosInstance;
   private useTokenAuth: boolean;
 
-  constructor(baseURL: string = API_BASE_URL, useTokenAuth: boolean = false) {
-    this.baseURL = baseURL;
+  constructor(baseURL: string = API_BASE_URL, useTokenAuth: boolean = false, config?: CreateAxiosDefaults) {
     this.useTokenAuth = useTokenAuth;
-  }
-
-  private async getAuthHeaders(): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (this.useTokenAuth) {
-      // Use token-based authentication for backend calls
-      const accessToken = tokenStorage.getAccessToken();
-      if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-    }
-    return headers;
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {},
-    retryOnUnauthorized: boolean = true
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const authHeaders = await this.getAuthHeaders();
-
-    const config: RequestInit = {
-      credentials: 'include',
-      ...options,
+    
+    this.axiosInstance = axios.create({
+      baseURL,
+      timeout: 30000,
+      withCredentials: true,
       headers: {
-        ...authHeaders,
-        ...options.headers,
+        'Content-Type': 'application/json',
       },
-    };
+      ...config,
+    });
 
-    try {
-      const response = await fetch(url, config);
+    this.setupInterceptors();
+  }
 
-      // Handle 401 Unauthorized for token-based auth
-      if (response.status === 401 && this.useTokenAuth && retryOnUnauthorized) {
-        try {
-          // Try to refresh the token
-          await authApi.refreshToken();
-          // Retry the request with the new token
-          return this.request<T>(endpoint, options, false);
-        } catch (refreshError) {
-          // If refresh fails, redirect to login
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+  private setupInterceptors() {
+    // Request interceptor for auth token injection
+    this.axiosInstance.interceptors.request.use(
+      async (config) => {
+        if (this.useTokenAuth) {
+          const accessToken = tokenStorage.getAccessToken();
+          if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
           }
-          throw new Error('Session expired. Please log in again.');
         }
-      }
+        return config;
+      },
+      (error) => Promise.reject(transformError(error))
+    );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          error: `HTTP ${response.status}: ${response.statusText}`,
-        }));
-        throw new Error(errorData.error || errorData.message || `Request failed with status ${response.status}`);
+    // Response interceptor for token refresh and error handling
+    this.axiosInstance.interceptors.response.use(
+      (response: AxiosResponse) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        // Handle 401 unauthorized with token refresh
+        if (
+          error.response?.status === 401 &&
+          this.useTokenAuth &&
+          !originalRequest._retry
+        ) {
+          originalRequest._retry = true;
+          
+          try {
+            await authApi.refreshToken();
+            const newToken = tokenStorage.getAccessToken();
+            if (newToken) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return this.axiosInstance(originalRequest);
+            }
+          } catch (refreshError) {
+            // Redirect to login if refresh fails
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+            return Promise.reject(transformError(new Error('Session expired. Please log in again.')));
+          }
+        }
+        
+        return Promise.reject(transformError(error));
       }
+    );
+  }
 
-      return await response.json();
+  // HTTP GET helper
+  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    try {
+      const response = await this.axiosInstance.get<T>(url, config);
+      return response.data;
     } catch (error) {
-      console.error(`API request failed: ${endpoint}`, error);
+      throw error; // Error is already transformed by interceptor
+    }
+  }
+
+  // HTTP POST helper
+  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    try {
+      const response = await this.axiosInstance.post<T>(url, data, config);
+      return response.data;
+    } catch (error) {
       throw error;
     }
   }
 
-  // HTTP Methods
-  async get<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'GET' });
+  // HTTP PUT helper
+  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    try {
+      const response = await this.axiosInstance.put<T>(url, data, config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  async post<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+  // HTTP PATCH helper
+  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    try {
+      const response = await this.axiosInstance.patch<T>(url, data, config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  async put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
+  // HTTP DELETE helper
+  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    try {
+      const response = await this.axiosInstance.delete<T>(url, config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  async patch<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  }
-
-  async delete<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+  // Get the underlying axios instance for advanced usage
+  getInstance(): AxiosInstance {
+    return this.axiosInstance;
   }
 }
 
@@ -185,6 +241,27 @@ export const api = {
 
   async cancelSubscription() {
     return externalApi.delete('/subscription/me');
+  },
+
+  // Competitor Analysis methods
+  async getTrafficAnalysis(projectId: string) {
+    return externalApi.get(`/api/tools/competitor-analysis/traffic-analysis/${projectId}`);
+  },
+
+  async getKeywordGapAnalysis(projectId: string) {
+    return externalApi.get(`/api/tools/competitor-analysis/keyword-gap-analysis/${projectId}`);
+  },
+
+  async getContentAnalysis(projectId: string) {
+    return externalApi.get(`/api/tools/competitor-analysis/content-analysis/${projectId}`);
+  },
+
+  async getBacklinkComparison(projectId: string) {
+    return externalApi.get(`/api/tools/competitor-analysis/backlink-comparison/${projectId}`);
+  },
+
+  async createCompetitorAnalysis(projectId: string) {
+    return externalApi.post('/api/tools/competitor-analysis', { projectId });
   },
 
   // General external API methods

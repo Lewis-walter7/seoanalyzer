@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { ConfigModule } from '@nestjs/config'
 import { ProjectsModule } from './projects/projects.module';
+import { ToolsModule } from './tools/tools.module';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { ProjectsModule } from './projects/projects.module';
     CrawlerModule,
     SubscriptionModule,
     ProjectsModule,
-    ConfigModule.forRoot({ isGlobal: true })
+    ConfigModule.forRoot({ isGlobal: true }),
+    ToolsModule
   ],
   controllers: [],
   providers: [],

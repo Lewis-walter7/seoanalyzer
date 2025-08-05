@@ -1,0 +1,392 @@
+openapi: 3.0.0
+info:
+  title: SEO Analyzer API
+  version: 1.0.0
+  description: API documentation for the SEO Analyzer project.
+paths:
+  /api/tools/keyword-research:
+    get:
+      summary: Get all keyword research resources
+      responses:
+        '200':
+          description: A list of keyword research resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KeywordResearch'
+    post:
+      summary: Create a new keyword research resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKeywordResearchDto'
+      responses:
+        '201':
+          description: Keyword research created successfully
+  /api/tools/keyword-research/{id}:
+    get:
+      summary: Get a keyword research resource by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A keyword research resource
+  /api/tools/site-audit:
+    get:
+      summary: Get all site audit resources
+      responses:
+        '200':
+          description: A list of site audits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteAudit'
+    post:
+      summary: Create a new site audit resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSiteAuditDto'
+      responses:
+        '201':
+          description: Site audit created successfully
+  /api/tools/site-audit/{id}:
+    get:
+      summary: Get a site audit resource by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A site audit resource
+  /api/tools/backlink-analyzer:
+    get:
+      summary: Get all backlink analyzer resources
+      responses:
+        '200':
+          description: A list of backlink analyses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BacklinkAnalysis'
+    post:
+      summary: Create a new backlink analysis resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBacklinkAnalysisDto'
+      responses:
+        '201':
+          description: Backlink analysis created successfully
+  /api/tools/backlink-analyzer/{id}:
+    get:
+      summary: Get a backlink analysis resource by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A backlink analysis resource
+  /api/tools/page-speed-test:
+    get:
+      summary: Get all page speed test resources
+      responses:
+        '200':
+          description: A list of page speed tests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PageSpeedTest'
+    post:
+      summary: Create a new page speed test resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePageSpeedTestDto'
+      responses:
+        '201':
+          description: Page speed test created successfully
+  /api/tools/rank-tracker:
+    get:
+      summary: Get all rank tracker resources
+      responses:
+        '200':
+          description: A list of rank trackers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RankTracker'
+    post:
+      summary: Create a new rank tracker resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRankTrackerDto'
+      responses:
+        '201':
+          description: Rank tracker created successfully
+  /api/tools/rank-tracker/{id}:
+    get:
+      summary: Get a rank tracker resource by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A rank tracker resource
+  /api/tools/competitor-analysis:
+    get:
+      summary: Get all competitor analysis resources
+      responses:
+        '200':
+          description: A list of competitor analyses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompetitorAnalysis'
+    post:
+      summary: Create a new competitor analysis resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompetitorAnalysisDto'
+      responses:
+        '201':
+          description: Competitor analysis created successfully
+  /api/tools/competitor-analysis/{id}:
+    get:
+      summary: Get a competitor analysis resource by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A competitor analysis resource
+  /api/tools/local-seo:
+    get:
+      summary: Get all local SEO resources
+      responses:
+        '200':
+          description: A list of local SEO resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LocalSeo'
+    post:
+      summary: Create a new local SEO resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocalSeoDto'
+      responses:
+        '201':
+          description: Local SEO created successfully
+  /api/tools/local-seo/{id}:
+    get:
+      summary: Get a local SEO resource by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A local SEO resource
+components:
+  schemas:
+    KeywordResearch:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        projectId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateKeywordResearchDto:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        projectId:
+          type: string
+        seedKeywords:
+          type: array
+          items:
+            type: string
+    SiteAudit:
+      type: object
+      properties:
+        id:
+          type: string
+        auditedAt:
+          type: string
+          format: date-time
+        seoScore:
+          type: integer
+        projectId:
+          type: string
+    CreateSiteAuditDto:
+      type: object
+      properties:
+        projectId:
+          type: string
+    BacklinkAnalysis:
+      type: object
+      properties:
+        id:
+          type: string
+        backlinks:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreateBacklinkAnalysisDto:
+      type: object
+      properties:
+        projectId:
+          type: string
+    PageSpeedTest:
+      type: object
+      properties:
+        id:
+          type: string
+        loadTime:
+          type: integer
+        projectId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreatePageSpeedTestDto:
+      type: object
+      properties:
+        projectId:
+          type: string
+    RankTracker:
+      type: object
+      properties:
+        id:
+          type: string
+        keyword:
+          type: string
+        projectId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreateRankTrackerDto:
+      type: object
+      properties:
+        projectId:
+          type: string
+        keyword:
+          type: string
+    CompetitorAnalysis:
+      type: object
+      properties:
+        id:
+          type: string
+        competitors:
+          type: array
+          items:
+            type: string
+        projectId:
+          type: string
+    CreateCompetitorAnalysisDto:
+      type: object
+      properties:
+        projectId:
+          type: string
+    LocalSeo:
+      type: object
+      properties:
+        id:
+          type: string
+        businessName:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipCode:
+          type: string
+        country:
+          type: string
+        projectId:
+          type: string
+    CreateLocalSeoDto:
+      type: object
+      properties:
+        projectId:
+          type: string
+        businessName:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        zipCode:
+          type: string
+        country:
+          type: string
+

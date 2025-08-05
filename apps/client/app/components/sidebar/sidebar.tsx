@@ -53,7 +53,7 @@ export default function Sidebar({ open, selectedProject }: SidebarProps) {
     <aside
       className={`${
         collapsed ? 'w-16 lg:w-18' : 'w-64 lg:w-64'
-      } transition-all duration-300 h-screen bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col fixed lg:relative z-40`}
+      } transition-all duration-300 motion-reduce:transition-none h-screen bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col fixed lg:relative z-40`}
     >
       {/* Header Logo + Toggle */}
       <div className="flex items-center justify-between p-2 border-b dark:border-gray-800 relative group min-h-16">

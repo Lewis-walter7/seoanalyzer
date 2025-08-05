@@ -1,6 +1,6 @@
 'use client';
 
-import { Sun, Moon, Laptop, Plus, Share2, Menu } from 'lucide-react';
+import { Sun, Moon, Laptop, Plus, Share2, Menu, X } from 'lucide-react';
 import { useTheme } from '../components/theme-provider';
 import { useState, useEffect } from 'react';
 import { ThemeToggle } from '../components/theme-toggle';
@@ -60,6 +60,12 @@ export default function Navbar() {
           >
             Pricing
           </Link>
+          <Link
+            href="/contact"
+            className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition"
+          >
+            Contact Us
+          </Link>
         </nav>
 
         {/* Right: Actions */}
@@ -78,7 +84,41 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Optional: Mobile nav can go here later if needed */}
+      {/* Mobile Navigation Menu */}
+      {menuOpen && (
+        <div className="md:hidden border-t dark:border-gray-800 bg-white dark:bg-gray-900">
+          <nav className="px-4 py-3 space-y-2">
+            <Link
+              href="/about"
+              className="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition"
+              onClick={() => setMenuOpen(false)}
+            >
+              About Us
+            </Link>
+            <Link
+              href="/features"
+              className="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition"
+              onClick={() => setMenuOpen(false)}
+            >
+              Features
+            </Link>
+            <Link
+              href="/pricing"
+              className="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition"
+              onClick={() => setMenuOpen(false)}
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/contact"
+              className="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition"
+              onClick={() => setMenuOpen(false)}
+            >
+              Contact Us
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

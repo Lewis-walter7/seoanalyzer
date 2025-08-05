@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '../components/theme-provider';
 import {
   Search,
@@ -140,6 +141,7 @@ const categories = ['All', 'Research', 'Analysis', 'Optimization', 'Performance'
 
 export default function ToolsPage() {
   const { theme } = useTheme();
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -151,8 +153,29 @@ export default function ToolsPage() {
   });
 
   const handleToolClick = (toolId: string) => {
-    // TODO: Navigate to specific tool page or open tool modal
-    // Router navigation will be implemented when tool pages are ready
+    // Navigate to specific tool page
+    // Map tool ID to correct route path
+    const routeMap: { [key: string]: string } = {
+      'keyword-research': '/tools/keyword-research',
+      'site-audit': '/tools/site-audit',
+      'backlink-analyzer': '/tools/backlink-analyzer',
+      'page-speed': '/tools/page-speed-test',
+      'rank-tracker': '/tools/rank-tracker',
+      'meta-optimizer': '/tools/meta-optimizer',
+      'local-seo': '/tools/local-seo',
+      'image-optimizer': '/tools/image-optimizer',
+      'mobile-seo': '/tools/mobile-seo',
+      'schema-validator': '/tools/schema-validator',
+      'competitor-analysis': '/tools/competitor-analysis',
+      'serp-analyzer': '/tools/serp-analyzer',
+    };
+    
+    const route = routeMap[toolId];
+    if (route) {
+      router.push(route);
+    } else {
+      console.warn(`No route found for tool: ${toolId}`);
+    }
   };
 
   return (
@@ -327,7 +350,7 @@ export default function ToolsPage() {
               </div>
 
               {/* Action Button */}
-              <button className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors group-hover:bg-blue-700">
+              <button className="w-full cursor-pointer flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors group-hover:bg-blue-700">
                 Launch Tool
                 <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -356,7 +379,9 @@ export default function ToolsPage() {
           <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
             Our team can help you create custom SEO strategies and tools tailored to your specific business needs.
           </p>
-          <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+          <button 
+            onClick={() => router.push('/contact')}
+            className="bg-white text-blue-600 px-8 py-3 cursor-pointer rounded-lg font-semibold hover:bg-gray-100 transition-colors">
             Contact Our SEO Experts
           </button>
         </div>

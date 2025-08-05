@@ -1,0 +1,87 @@
+import { PrismaService } from '../../prisma/prisma.service';
+export declare class LocalSeoService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    create(userId: string, createDto: {
+        projectId: string;
+        businessName: string;
+        address: string;
+        city: string;
+        zipCode: string;
+        country: string;
+    }): Promise<{
+        id: string;
+        projectId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        state: string | null;
+        category: string | null;
+        businessName: string;
+        address: string;
+        city: string;
+        zipCode: string;
+        country: string;
+        phone: string | null;
+        website: string | null;
+        napScore: number | null;
+        citationCount: number;
+        inconsistentCitationsCount: number;
+        googleMyBusinessId: string | null;
+        googleRating: number | null;
+        googleReviewCount: number;
+        localRankPosition: number | null;
+        localSearchVolume: number | null;
+    }>;
+    findAll(userId: string, filter: {
+        projectId?: string;
+    }): Promise<{
+        id: string;
+        projectId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        state: string | null;
+        category: string | null;
+        businessName: string;
+        address: string;
+        city: string;
+        zipCode: string;
+        country: string;
+        phone: string | null;
+        website: string | null;
+        napScore: number | null;
+        citationCount: number;
+        inconsistentCitationsCount: number;
+        googleMyBusinessId: string | null;
+        googleRating: number | null;
+        googleReviewCount: number;
+        localRankPosition: number | null;
+        localSearchVolume: number | null;
+    }[]>;
+    findOne(userId: string, id: string): Promise<{
+        id: string;
+        projectId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        state: string | null;
+        category: string | null;
+        businessName: string;
+        address: string;
+        city: string;
+        zipCode: string;
+        country: string;
+        phone: string | null;
+        website: string | null;
+        napScore: number | null;
+        citationCount: number;
+        inconsistentCitationsCount: number;
+        googleMyBusinessId: string | null;
+        googleRating: number | null;
+        googleReviewCount: number;
+        localRankPosition: number | null;
+        localSearchVolume: number | null;
+    } | null>;
+    remove(userId: string, id: string): Promise<void>;
+}

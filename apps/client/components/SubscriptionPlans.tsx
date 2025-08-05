@@ -142,7 +142,8 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
     }
   };
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number, planId: string) => {
+    if (planId === 'enterprise') return 'Contact Us';
     if (price === 0) return 'Free';
     
     // Convert from cents to dollars
@@ -231,7 +232,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
         {plans.map((plan) => (
           <Card 
             key={plan.id} 
@@ -267,9 +268,9 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
               <CardDescription className="text-sm">{plan.description}</CardDescription>
               <div className="mt-4">
                 <span className="text-4xl font-bold">
-                  {formatPrice(getCurrentPrice(plan))}
+                  {formatPrice(getCurrentPrice(plan), plan.id)}
                 </span>
-                {getCurrentPrice(plan) > 0 && (
+                {getCurrentPrice(plan) > 0 && plan.id !== 'enterprise' && (
                   <span className="text-gray-600 dark:text-gray-400 ml-1">
                     /{billingCycle.toLowerCase()}
                   </span>
@@ -291,7 +292,13 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
             <CardFooter className="pt-4">
               <Button
                 className="w-full"
-                onClick={() => handlePlanSelect(plan)}
+onClick={() => {
+                  if (plan.id === 'enterprise') {
+                    window.location.href = 'mailto:support@example.com';
+                  } else {
+                    handlePlanSelect(plan);
+                  }
+                }}
                 disabled={isPlanActive(plan.id) || isPlanLoading(plan.id)}
                 variant={plan.isPopular ? 'default' : 'outline'}
               >
@@ -305,7 +312,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
                 ) : getCurrentPrice(plan) === 0 ? (
                   user ? 'Get Started' : 'Sign Up Free'
                 ) : (
-                  user ? `Upgrade to ${plan.displayName}` : `Choose ${plan.displayName}`
+plan.id === 'enterprise' ? (user ? 'Contact Us' : 'Get in Touch') : (user ? `Upgrade to ${plan.displayName}` : `Choose ${plan.displayName}`)
                 )}
               </Button>
               

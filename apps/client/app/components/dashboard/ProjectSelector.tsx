@@ -2,20 +2,21 @@
 
 import { useState } from 'react';
 import { ChevronDown, Plus, Globe, Calendar, BarChart3, Settings, Trash2 } from 'lucide-react';
+import { Project } from '@/hooks';
 
-interface Project {
-  id: string;
-  name: string;
-  url: string;
-  domain?: string;
-  onPageScore?: string;
-  problems?: string;
-  backlinks?: string;
-  crawlStatus: string;
-  lastCrawl?: string;
-  pages?: string;
-  createdAt?: Date;
-}
+// interface Project {
+//   id: string;
+//   name: string;
+//   url: string;
+//   domain?: string;
+//   onPageScore?: string;
+//   problems?: string;
+//   backlinks?: string;
+//   crawlStatus: string;
+//   lastCrawl?: string;
+//   pages?: string;
+//   createdAt?: Date;
+// }
 
 interface ProjectSelectorProps {
   projects: Project[];

@@ -56,25 +56,20 @@ export default function Navbar({ sidebarOpen, setSidebarOpen }: NavbarProps) {
 
         {/* Left: Mobile Menu & Logo */}
         <div className="flex items-center space-x-2 sm:space-x-3">
-          {/* Mobile Sidebar Toggle */}
-          {setSidebarOpen && (
-            <button 
-              className="lg:hidden p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" 
-              onClick={toggleSidebar}
-            >
-              <Menu size={20} className="text-gray-700 dark:text-gray-300" />
-            </button>
-          )}
-          
-          {/* Mobile Menu Toggle */}
+          {/* Combined Mobile Navigation Toggle */}
           <button 
-            className="md:hidden p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800" 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors motion-reduce:transition-none" 
+            onClick={() => {
+              setMobileMenuOpen(!mobileMenuOpen);
+              setSidebarOpen && setSidebarOpen(!mobileMenuOpen);
+            }}
+            aria-label="Open menu"
+            style={{ width: '44px', height: '44px' }}
           >
             {mobileMenuOpen ? (
-              <X size={20} className="text-gray-700 dark:text-gray-300" />
+              <X size={24} className="text-gray-700 dark:text-gray-300" />
             ) : (
-              <Menu size={20} className="text-gray-700 dark:text-gray-300" />
+              <Menu size={24} className="text-gray-700 dark:text-gray-300" />
             )}
           </button>
           
@@ -104,6 +99,12 @@ export default function Navbar({ sidebarOpen, setSidebarOpen }: NavbarProps) {
             className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition whitespace-nowrap"
           >
             Pricing
+          </Link>
+          <Link
+            href="/contact"
+            className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition whitespace-nowrap"
+          >
+            Contact Us
           </Link>
         </nav>
 
@@ -230,6 +231,13 @@ export default function Navbar({ sidebarOpen, setSidebarOpen }: NavbarProps) {
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
+            </Link>
+            <Link
+              href="/contact"
+              className="block py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Contact Us
             </Link>
           </nav>
         </div>
