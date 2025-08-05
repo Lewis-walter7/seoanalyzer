@@ -105,7 +105,7 @@ const KeywordGapAnalysis: React.FC<KeywordGapAnalysisProps> = ({ data }) => {
         <h5 className="font-medium text-blue-900 mb-2">Key Insights</h5>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• Focus on high-opportunity keywords with medium difficulty</li>
-          <li>• Target keywords where competitors rank but you don't</li>
+          <li>• Target keywords where competitors rank but you don&apos;t</li>
           <li>• Consider search volume vs. competition balance</li>
         </ul>
       </div>

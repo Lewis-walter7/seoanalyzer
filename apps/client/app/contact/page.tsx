@@ -180,7 +180,7 @@ export default function ContactPage() {
                   Send us a Message
                 </CardTitle>
                 <CardDescription className="text-lg text-gray-600 dark:text-gray-300">
-                  Fill out the form below and we'll get back to you within 24 hours
+                  Fill out the form below and we&apos;ll get back to you within 24 hours
                 </CardDescription>
               </CardHeader>
 
@@ -350,7 +350,7 @@ export default function ContactPage() {
                         </div>
                         <div className="ml-3">
                           <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                            Message sent successfully! We'll get back to you soon.
+                            Message sent successfully! We&apos;ll get back to you soon.
                           </p>
                         </div>
                       </div>

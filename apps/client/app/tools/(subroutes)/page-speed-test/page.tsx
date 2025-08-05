@@ -150,7 +150,7 @@ const Page = () => {
             Page Speed Test
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-            Test your website's loading speed and get optimization recommendations.
+            Test your website&apos;s loading speed and get optimization recommendations.
           </p>
         </div>
 
