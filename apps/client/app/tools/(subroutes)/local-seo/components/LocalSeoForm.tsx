@@ -7,7 +7,12 @@ interface LocalSeoFormProps {
 }
 
 const LocalSeoForm: React.FC<LocalSeoFormProps> = ({ onSubmit, isLoading = false }) => {
-  const [formData, setFormData] = useState({ name: '', address: '', phone: '', website: '' });
+const [formData, setFormData] = useState<Record<'name' | 'address' | 'phone' | 'website', string>>({
+  name: '',
+  address: '',
+  phone: '',
+  website: '',
+});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -21,7 +26,7 @@ const LocalSeoForm: React.FC<LocalSeoFormProps> = ({ onSubmit, isLoading = false
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {['name', 'address', 'phone', 'website'].map((field) => (
+      {(['name', 'address', 'phone', 'website'] as const).map((field) => (
         <div key={field}>
           <label htmlFor={field} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {field.charAt(0).toUpperCase() + field.slice(1)}
