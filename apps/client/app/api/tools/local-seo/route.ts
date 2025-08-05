@@ -214,7 +214,8 @@ export async function POST(request: NextRequest) {
     const response: LocalSeoResponse = {
       businessInfo: {
         ...body,
-        coordinates
+        coordinates: coordinates ?? undefined
+
       },
       citations,
       overallConsistency,

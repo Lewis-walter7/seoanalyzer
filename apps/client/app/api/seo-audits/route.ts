@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/authUtils';
 
 // GET /api/seo-audits - Fetch SEO audits for the current user
-export async function GET(request) {
+export async function GET(request: NextRequest) {
   const authResult = await getAuthenticatedUser(request);
   if (!authResult.success) {
     return NextResponse.json({ error: authResult.error }, { status: 401 });

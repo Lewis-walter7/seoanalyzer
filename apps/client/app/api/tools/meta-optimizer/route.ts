@@ -41,6 +41,10 @@ interface MetaOptimizerResponse {
   score: number;
 }
 
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 10000);
+
+
 // Approximate pixel width calculation for Google SERP display
 function calculatePixelWidth(text: string): number {
   // Average character widths in pixels for Google's display font
@@ -167,8 +171,9 @@ async function fetchMetaTags(url: string): Promise<{ title: string; description:
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; SEO-Analyzer/1.0)'
       },
-      timeout: 10000
+      signal: controller.signal
     });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);

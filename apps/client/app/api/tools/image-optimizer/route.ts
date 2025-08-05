@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         console.error(`Error processing ${file.name}:`, error);
         results.push({
           originalName: file.name,
-          error: `Failed to process image: ${error.message}`
+          error: `Failed to process image: ${(error as Error).message}`
         });
       }
     }
