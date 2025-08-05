@@ -46,7 +46,7 @@ export default function HomePage() {
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <section className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-          <Dashboard selectedProject={selectedProject} setSelectedProject={setSelectedProject} />
+          <Dashboard />
         </section>
       </main>
     </div>
