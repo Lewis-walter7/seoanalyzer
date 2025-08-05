@@ -7,7 +7,6 @@ import { useState, useRef, useEffect } from 'react';
 import { navItems, seoNavItems } from '@/libs/data';
 import { PanelLeft, PanelLeftClose, UserPlus, X, LogOut, Settings, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
 import { useAuth } from '../providers/session-provider';
 
 interface SidebarProps {

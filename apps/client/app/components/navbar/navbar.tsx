@@ -6,7 +6,6 @@ import { useState, useEffect, useRef } from 'react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import Image from 'next/image';
 import { useAuth } from '../providers/session-provider';
 import { useRouter } from 'next/navigation';
 
