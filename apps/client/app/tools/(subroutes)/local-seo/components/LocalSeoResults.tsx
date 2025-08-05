@@ -1,5 +1,9 @@
 import React from 'react';
-import { Chart, Radar } from 'react-chartjs-2';
+import dynamic from 'next/dynamic';
+
+// Dynamically import Chart.js components to prevent SSR issues
+const Chart = dynamic(() => import('react-chartjs-2').then((mod) => mod.Chart), { ssr: false });
+const Radar = dynamic(() => import('react-chartjs-2').then((mod) => mod.Radar), { ssr: false });
 
 interface LocalSeoResultsProps {
   results: any;

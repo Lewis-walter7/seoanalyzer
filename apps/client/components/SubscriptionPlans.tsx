@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from './ui/badge';
 import { Check, Loader2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/components/providers/session-provider';
-import { staticSubscriptionPlans } from '@/libs/subscriptionPlans';
-
 interface SubscriptionPlan {
   id: string;
   name: string;
@@ -29,8 +28,12 @@ interface SubscriptionPlan {
   hasTeamCollaboration?: boolean;
   hasCustomAlerts?: boolean;
   hasDataExport?: boolean;
+  analysisFrequencies?: string[];
+  isActive?: boolean;
   isPopular?: boolean;
   sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface CurrentSubscription {
@@ -62,10 +65,37 @@ interface SubscriptionPlansProps {
 
 export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }: SubscriptionPlansProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const plans = staticSubscriptionPlans.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
+
+  // Fetch subscription plans
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setPlansLoading(true);
+      try {
+        const response = await fetch('/api/subscription/plans');
+        if (response.ok) {
+          const plansData = await response.json();
+          // Sort plans by sortOrder
+          const sortedPlans = plansData.sort((a: SubscriptionPlan, b: SubscriptionPlan) => (a.sortOrder || 0) - (b.sortOrder || 0));
+          setPlans(sortedPlans);
+        } else {
+          toast.error('Failed to load subscription plans');
+        }
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+        toast.error('An error occurred while loading plans');
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   // Fetch current subscription
   useEffect(() => {
@@ -88,59 +118,31 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
     fetchCurrentSubscription();
   }, [user]);
 
-  const handlePlanSelect = async (plan: SubscriptionPlan) => {
-    // If user is not authenticated, redirect to sign in
-    if (!user) {
-      toast.error('Please sign in to upgrade your plan');
-      // Redirect to login page with return URL
-      window.location.href = `/login?callbackUrl=${encodeURIComponent('/pricing')}`;
-      return;
-    }
+    const handlePlanSelect = async (plan: SubscriptionPlan) => {
+        if (!user) {
+            toast.error('Please sign in to upgrade your plan');
+            window.location.href = `/login?callbackUrl=${encodeURIComponent('/pricing')}`;
+            return;
+        }
 
-    // If user is already on this plan
-    if (currentSubscription?.plan?.id === plan.id) {
-      toast.info('You are already on this plan');
-      return;
-    }
+        if (currentSubscription?.plan?.id === plan.id) {
+            toast.info('You are already on this plan');
+            return;
+        }
 
-    // If it's a free plan, handle differently
-    if (plan.priceMonthly === 0) {
-      toast.info('You can start using the free plan immediately after signing in');
-      return;
-    }
+        if (plan.priceMonthly === 0) {
+            toast.info('You can start using the free plan immediately after signing in');
+            return;
+        }
 
-    setLoadingPlan(plan.id);
+        if (plan.id === 'enterprise') {
+            window.location.href = 'mailto:support@example.com';
+            return;
+        }
 
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/subscription/pay/initiate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          planId: plan.id,
-          billingCycle: billingCycle,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to initiate payment');
-      }
-
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        throw new Error('No payment link received');
-      }
-    } catch (error) {
-      console.error('Payment initialization error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to initiate payment');
-    } finally {
-      setLoadingPlan(null);
-    }
-  };
+        // Redirect to the new checkout page
+        router.push(`/checkout/${plan.id}?billingCycle=${billingCycle}`);
+    };
 
   const formatPrice = (price: number, planId: string) => {
     if (planId === 'enterprise') return 'Contact Us';
@@ -232,8 +234,14 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-        {plans.map((plan) => (
+      {plansLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin" />
+          <span className="ml-2 text-lg">Loading subscription plans...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          {plans.map((plan) => (
           <Card 
             key={plan.id} 
             className={`relative ${
@@ -292,13 +300,7 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
             <CardFooter className="pt-4">
               <Button
                 className="w-full"
-onClick={() => {
-                  if (plan.id === 'enterprise') {
-                    window.location.href = 'mailto:support@example.com';
-                  } else {
-                    handlePlanSelect(plan);
-                  }
-                }}
+                onClick={() => handlePlanSelect(plan)}
                 disabled={isPlanActive(plan.id) || isPlanLoading(plan.id)}
                 variant={plan.isPopular ? 'default' : 'outline'}
               >
@@ -324,7 +326,8 @@ plan.id === 'enterprise' ? (user ? 'Contact Us' : 'Get in Touch') : (user ? `Upg
             </CardFooter>
           </Card>
         ))}
-      </div>
+        </div>
+      )}
 
       <div className="mt-12 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">

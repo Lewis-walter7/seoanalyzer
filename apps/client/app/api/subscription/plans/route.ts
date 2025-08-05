@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getBackendToken } from '@/lib/backend-token';
 
 // Backend API URL
 const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:3001';

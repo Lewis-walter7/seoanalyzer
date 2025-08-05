@@ -4,6 +4,7 @@ import  prisma  from '@/lib/prisma';
 import { getAuthenticatedUser, sanitizeUser } from '@/lib/authUtils';
 import { updateUserProfileSchema } from '@/lib/schema/userSchema';
 import { generalApiRateLimit } from '@/lib/rateLimit';
+import { getBackendToken } from '@/lib/backend-token';
 
 // GET /api/users/me - Get current user profile
 export async function GET(request: NextRequest) {

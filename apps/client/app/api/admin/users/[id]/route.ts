@@ -210,6 +210,8 @@ export async function PATCH(request: NextRequest, context: any) {
     // Hash password if provided
     if (updateData.password) {
       dataToUpdate.password = await bcrypt.hash(updateData.password, 12);
+    } else {
+      delete dataToUpdate.password;
     }
 
     // Update user

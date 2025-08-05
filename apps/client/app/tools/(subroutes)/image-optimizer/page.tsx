@@ -18,11 +18,8 @@ import {
   FileImage,
   Loader2
 } from 'lucide-react';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
-
-// Register ChartJS components
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from '@/utils/recharts-dynamic';
+import { formatFileSize } from '@/utils/metrics';
 
 interface ImageFile {
   file: File;
@@ -67,13 +64,6 @@ const Page = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -206,26 +196,12 @@ const Page = () => {
     });
   };
 
-  // Chart data for cumulative savings
-  const chartData = {
-    labels: results.filter(r => !r.error).map(r => r.originalName),
-    datasets: [
-      {
-        label: 'Original Size (KB)',
-        data: results.filter(r => !r.error).map(r => Math.round((r.originalSize || 0) / 1024)),
-        backgroundColor: 'rgba(239, 68, 68, 0.5)',
-        borderColor: 'rgba(239, 68, 68, 1)',
-        borderWidth: 1,
-      },
-      {
-        label: 'Optimized Size (KB)',
-        data: results.filter(r => !r.error).map(r => Math.round((r.optimizedSize || 0) / 1024)),
-        backgroundColor: 'rgba(34, 197, 94, 0.5)',
-        borderColor: 'rgba(34, 197, 94, 1)',
-        borderWidth: 1,
-      },
-    ],
-  };
+  // Chart data for cumulative savings (Recharts format)
+  const chartData = results.filter(r => !r.error).map(r => ({
+    name: r.originalName,
+    original: Math.round((r.originalSize || 0) / 1024),
+    optimized: Math.round((r.optimizedSize || 0) / 1024),
+  }));
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'>
@@ -405,31 +381,16 @@ const Page = () => {
                     <div className='mt-6'>
                       <h3 className='text-lg font-medium mb-4'>Size Comparison Chart</h3>
                       <div className='h-64'>
-                        <Bar 
-                          data={chartData} 
-                          options={{
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                              legend: {
-                                position: 'top' as const,
-                              },
-                              title: {
-                                display: true,
-                                text: 'Before vs After Optimization',
-                              },
-                            },
-                            scales: {
-                              y: {
-                                beginAtZero: true,
-                                title: {
-                                  display: true,
-                                  text: 'File Size (KB)'
-                                }
-                              }
-                            },
-                          }} 
-                        />
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="original" fill="#ef4444" />
+                            <Bar dataKey="optimized" fill="#22c55e" />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
                     </div>
                   )}

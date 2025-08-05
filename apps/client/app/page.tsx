@@ -24,7 +24,7 @@ export default function HomePage() {
   };
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense>
       <div className="flex h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block">

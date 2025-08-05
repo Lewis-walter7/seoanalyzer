@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import authOptions  from '@/lib/auth';
 import { getToken } from 'next-auth/jwt';
+import { getBackendToken } from '@/lib/backend-token';
 
 // Backend API URL
 const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:3001';
@@ -18,29 +19,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get the NextAuth JWT token
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    if (!token) {
+    // Generate backend token using the shared utility
+    const backendToken = await getBackendToken(request);
+    if (!backendToken) {
       return NextResponse.json(
-        { error: 'Authentication token not found' },
+        { error: 'Failed to generate backend authentication token' },
         { status: 401 }
       );
     }
-
-    // Create a simple JWT-like token with user info for the backend
-    // In production, you'd want to sign this properly
-    const backendToken = Buffer.from(JSON.stringify({
-      sub: token.sub || token.id,
-      email: token.email,
-      name: token.name,
-      isAdmin: token.isAdmin,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
-    })).toString('base64');
 
     // Fetch user subscription from backend API
     const response = await fetch(`${BACKEND_API_URL}/v1/subscription/me`, {
