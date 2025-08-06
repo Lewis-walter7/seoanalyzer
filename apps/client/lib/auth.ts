@@ -31,7 +31,7 @@ export interface RegisterCredentials {
 
 // Create axios instance with interceptors
 const authApi = axios.create({
-  baseURL: `${API_BASE_URL}/auth`,
+  baseURL: `${API_BASE_URL}/api/auth`,
   timeout: 10000,
 });
 

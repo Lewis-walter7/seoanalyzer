@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from './ui/badge';
+import BillingCycleToggle from './ui/BillingCycleToggle';
 import { Check, Loader2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/components/providers/session-provider';
@@ -210,28 +211,10 @@ export default function SubscriptionPlans({ currentPlan = 'free', onPlanChange }
           Select the perfect plan for your SEO analysis needs
         </p>
         
-        {/* Billing Cycle Toggle */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <span className={`text-sm ${billingCycle === 'MONTHLY' ? 'font-semibold text-blue-600' : 'text-gray-600'}`}>
-            Monthly
-          </span>
-          <button
-            onClick={() => setBillingCycle(billingCycle === 'MONTHLY' ? 'YEARLY' : 'MONTHLY')}
-            className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                billingCycle === 'YEARLY' ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-          <span className={`text-sm ${billingCycle === 'YEARLY' ? 'font-semibold text-blue-600' : 'text-gray-600'}`}>
-            Yearly
-            <Badge className="ml-1 bg-green-100 text-green-800 text-xs">
-              Save 20%
-            </Badge>
-          </span>
-        </div>
+        <BillingCycleToggle
+          billingCycle={billingCycle}
+          onChange={setBillingCycle}
+        />
       </div>
 
       {plansLoading ? (

@@ -231,7 +231,7 @@ export const api = {
 
   // Subscriptions
   async getBackendSubscription() {
-    return externalApi.get('/subscription/me');
+    return externalApi.get('/v1/subscription/me');
   },
 
 

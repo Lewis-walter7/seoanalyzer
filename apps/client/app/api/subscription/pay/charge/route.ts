@@ -99,6 +99,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    
+
+    console.log('Token being sent:', backendToken);
 
     // Forward request to backend API
     const backendResponse = await fetch(`${BACKEND_API_URL}/v1/subscription/pay/charge`, {

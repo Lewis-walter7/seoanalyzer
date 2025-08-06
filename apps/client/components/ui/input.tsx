@@ -1,15 +1,32 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { cva, type VariantProps } from "class-variance-authority"
+
+const inputVariants = cva(
+  "flex h-9 w-full rounded-md transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        glass: "glass-effect border-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 bg-gradient-to-r from-purple-500/30 to-blue-500/30 dark:from-purple-700/50 dark:to-blue-700/50"
+      }
+    },
+    defaultVariants: {
+      variant: "default"
+    }
+  }
+)
 
 export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+  extends React.InputHTMLAttributes<HTMLInputElement>,
+    VariantProps<typeof inputVariants> {
   label?: string
   error?: string
   helperText?: string
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, label, error, helperText, id, ...props }, ref) => {
+  ({ className, variant, type, label, error, helperText, id, ...props }, ref) => {
     const inputId = id || `input-${Math.random().toString(36).substring(2, 9)}`
     const errorId = error ? `${inputId}-error` : undefined
     const helperId = helperText ? `${inputId}-helper` : undefined
@@ -33,7 +50,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           type={type}
           id={inputId}
           className={cn(
-            "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+            inputVariants({ variant }),
             error && "border-destructive focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
             className
           )}
