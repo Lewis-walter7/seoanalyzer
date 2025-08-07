@@ -406,14 +406,6 @@ apps/server/
 
 This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
-## 🔗 Links
-
-- [API Documentation](./docs/api.md)
-- [Authentication Guide](./docs/AUTHENTICATION.md)
-- [Crawler Documentation](./docs/crawler.md)
-- [Deployment Guide](./docs/deployment.md)
-- [Contributing Guidelines](./CONTRIBUTING.md)
-
 ## 🐛 Known Issues & Roadmap
 
 ### Known Issues
@@ -439,8 +431,6 @@ For support, bug reports, or feature requests:
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/seo-analyzer/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/seo-analyzer/discussions)
-- **Email**: support@seo-analyzer.com
-- **Documentation**: [docs.seo-analyzer.com](https://docs.seo-analyzer.com)
 
 ---
 
