@@ -7,7 +7,6 @@ import {
   Body,
   Param,
   UseGuards,
-  Req,
   HttpCode,
   HttpStatus,
   ValidationPipe,
@@ -22,7 +21,7 @@ import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 
 @Controller('v1/projects')
 export class ProjectsController {
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(private readonly projectService: ProjectService) { }
 
   @UseGuards(AuthGuard)
   @Get()

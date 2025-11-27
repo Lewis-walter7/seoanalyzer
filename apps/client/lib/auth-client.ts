@@ -22,31 +22,31 @@ export const tokenStorage = {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('accessToken');
   },
-  
+
   getRefreshToken: () => {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('refreshToken');
   },
-  
+
   setTokens: (accessToken: string, refreshToken: string) => {
     if (typeof window === 'undefined') return;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
   },
-  
+
   clearTokens: () => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   },
-  
+
   getUser: () => {
     if (typeof window === 'undefined') return null;
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   },
-  
+
   setUser: (user: any) => {
     if (typeof window === 'undefined') return;
     localStorage.setItem('user', JSON.stringify(user));
@@ -62,14 +62,14 @@ export const authApi = {
     password: string;
   }) => {
     try {
-      const response = await externalApi.post<AuthResponse>('/auth/register', userData);
-      
+      const response = await externalApi.post<AuthResponse>('/v1/auth/register', userData);
+
       // Store tokens and user data
       if (response.accessToken && response.refreshToken) {
         tokenStorage.setTokens(response.accessToken, response.refreshToken);
         tokenStorage.setUser(response.user);
       }
-      
+
       return response;
     } catch (error: any) {
       throw new Error(error.message || 'Registration failed');
@@ -82,14 +82,14 @@ export const authApi = {
     password: string;
   }) => {
     try {
-      const response = await externalApi.post<AuthResponse>('/auth/login', credentials);
-      
+      const response = await externalApi.post<AuthResponse>('/v1/auth/login', credentials);
+
       // Store tokens and user data
       if (response.accessToken && response.refreshToken) {
         tokenStorage.setTokens(response.accessToken, response.refreshToken);
         tokenStorage.setUser(response.user);
       }
-      
+
       return response;
     } catch (error: any) {
       throw new Error(error.message || 'Login failed');
@@ -104,14 +104,14 @@ export const authApi = {
     }
 
     try {
-      const response = await externalApi.post<AuthResponse>('/auth/refresh', { refreshToken });
-      
+      const response = await externalApi.post<AuthResponse>('/v1/auth/refresh', { refreshToken });
+
       // Update stored tokens
       if (response.accessToken) {
         tokenStorage.setTokens(response.accessToken, response.refreshToken || refreshToken);
         tokenStorage.setUser(response.user);
       }
-      
+
       return response;
     } catch (error: any) {
       // If refresh fails, clear tokens
@@ -123,10 +123,10 @@ export const authApi = {
   // Logout
   logout: async () => {
     const accessToken = tokenStorage.getAccessToken();
-    
+
     try {
       if (accessToken) {
-        await externalApi.post('/auth/logout', {}, {
+        await externalApi.post('/v1/auth/logout', {}, {
           headers: {
             'Authorization': `Bearer ${accessToken}`
           }

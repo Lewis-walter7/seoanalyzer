@@ -53,7 +53,7 @@ const getCachedProjects = (): CachedProjectsData | null => {
     const cached = localStorage.getItem(PROJECTS_CACHE_KEY);
     if (!cached) return null;
     const data = JSON.parse(cached) as CachedProjectsData;
-    
+
     // Check if cache is still valid
     if (Date.now() - data.timestamp > CACHE_DURATION) {
       localStorage.removeItem(PROJECTS_CACHE_KEY);
@@ -103,8 +103,8 @@ export const useProjects = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectIdFromUrl = searchParams.get('project');
-  
-  
+
+
   const [state, setState] = useState<ProjectsState>({
     projects: [],
     selectedProject: null,
@@ -143,11 +143,11 @@ export const useProjects = () => {
 
   // Fetch projects from API
   const fetchProjects = useCallback(async (force = false) => {
-    
+
     if (!isAuthenticated) {
       return;
     }
-    
+
     if (loadingRef.current) {
       return;
     }
@@ -165,7 +165,7 @@ export const useProjects = () => {
 
     try {
       const response = await api.getProjects();
-      
+
       // Handle different response formats
       let projects: Project[] = [];
       if (Array.isArray(response)) {
@@ -174,15 +174,15 @@ export const useProjects = () => {
         projects = (response as any).projects || [];
       } else if (response && typeof response === 'object') {
         // Maybe the response is the projects array itself
-        projects = Object.values(response).filter(item => 
+        projects = Object.values(response).filter(item =>
           item && typeof item === 'object' && 'id' in item
         ) as Project[];
       }
-      
-      
+
+
       // Cache the projects
       setCachedProjects(projects);
-      
+
       setState(prev => ({
         ...prev,
         projects,
@@ -218,15 +218,15 @@ export const useProjects = () => {
   // Update URL with selected project
   const updateUrlWithProject = useCallback((project: Project | null) => {
     const params = new URLSearchParams(window.location.search);
-    
+
     if (project) {
       params.set('project', project.id);
     } else {
       params.delete('project');
     }
-    
+
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
-    
+
     // Use replace to avoid creating history entries for project selection
     router.replace(newUrl, { scroll: false });
   }, [router]);
@@ -261,7 +261,7 @@ export const useProjects = () => {
       // Update cache
       const updatedProjects = [newProject, ...state.projects];
       setCachedProjects(updatedProjects);
-      
+
       // Select the new project and update URL
       setSelectedProjectId(newProject.id);
       updateUrlWithProject(newProject);
@@ -270,7 +270,7 @@ export const useProjects = () => {
     } catch (error) {
       console.error('Failed to create project:', error);
       let errorMessage = 'Failed to create project';
-      
+
       if (error instanceof Error) {
         // Handle specific error types
         if (error.message.includes('Project limit reached') || error.message.includes('maximum number of projects')) {
@@ -302,12 +302,12 @@ export const useProjects = () => {
 
     try {
       await api.deleteBackendProject(projectId);
-      
+
       // Update state
       setState(prev => {
         const updatedProjects = prev.projects.filter(p => p.id !== projectId);
         const wasSelected = prev.selectedProject?.id === projectId;
-        
+
         return {
           ...prev,
           projects: updatedProjects,
@@ -318,7 +318,7 @@ export const useProjects = () => {
       // Update cache
       const updatedProjects = state.projects.filter(p => p.id !== projectId);
       setCachedProjects(updatedProjects);
-      
+
       // Clear selection if deleted project was selected
       if (state.selectedProject?.id === projectId) {
         setSelectedProjectId(null);
@@ -347,12 +347,12 @@ export const useProjects = () => {
 
       // Update local state
       setState(prev => {
-        const updatedProjects = prev.projects.map(project => 
-          project.id === projectId 
+        const updatedProjects = prev.projects.map(project =>
+          project.id === projectId
             ? { ...project, ...updates, updatedAt: new Date() }
             : project
         );
-        
+
         const updatedSelectedProject = prev.selectedProject?.id === projectId
           ? { ...prev.selectedProject, ...updates, updatedAt: new Date() }
           : prev.selectedProject;
@@ -367,8 +367,8 @@ export const useProjects = () => {
       // Update cache
       const currentCached = getCachedProjects();
       if (currentCached) {
-        const updatedProjects = currentCached.projects.map(project => 
-          project.id === projectId 
+        const updatedProjects = currentCached.projects.map(project =>
+          project.id === projectId
             ? { ...project, ...updates, updatedAt: new Date() }
             : project
         );
@@ -409,6 +409,30 @@ export const useProjects = () => {
     }
   }, [isAuthenticated]); // Remove fetchProjects and clearCache from dependencies
 
+  // Analyze a project
+  const analyzeProject = useCallback(async (projectId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!isAuthenticated) {
+      return { success: false, error: 'You must be logged in to analyze a project' };
+    }
+
+    try {
+      // Optimistically update status to RUNNING
+      updateCachedProject(projectId, { crawlStatus: 'RUNNING' });
+
+      await api.analyzeProject(projectId);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to start analysis:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start analysis';
+
+      // Revert status on failure (or set to FAILED)
+      updateCachedProject(projectId, { crawlStatus: 'FAILED' });
+
+      return { success: false, error: errorMessage };
+    }
+  }, [isAuthenticated, updateCachedProject]);
+
   return {
     ...state,
     selectProject,
@@ -417,6 +441,7 @@ export const useProjects = () => {
     updateCachedProject,
     refreshProjects,
     clearCache,
-    fetchProjects
+    fetchProjects,
+    analyzeProject
   };
 };

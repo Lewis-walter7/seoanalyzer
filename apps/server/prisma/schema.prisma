@@ -3,36 +3,36 @@ generator client {
 }
 
 model IntaSendWebhookEvent {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  invoiceId   String   @map("invoice_id")
+  id          String    @id @default(uuid())
+  invoiceId   String    @map("invoice_id")
   signature   String
   payload     Json
   processedAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([invoiceId])
   @@map("intasend_webhook_events")
 }
+
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
 model Project {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(uuid())
   name        String
   url         String
-  domain      String   
+  domain      String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Crawl tracking fields
-  lastCrawl     DateTime?
-  crawlStatus   CrawlStatus? @default(QUEUED)
-  onPageScore   Float?      // 0-100 average on-page SEO score
-  totalPages    Int?        @default(0)
-  totalIssues   Int?        @default(0)
+  lastCrawl   DateTime?
+  crawlStatus CrawlStatus? @default(QUEUED)
+  onPageScore Float? // 0-100 average on-page SEO score
+  totalPages  Int?         @default(0)
+  totalIssues Int?         @default(0)
 
   // Relations
   crawlJobs       CrawlJob[]
@@ -43,15 +43,15 @@ model Project {
   localListings   LocalListing[]
   seoIssues       SeoIssue[]
   seoAudits       SeoAudit[]
-  User            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String?          @db.ObjectId
+  User            User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?
 
   @@map("projects")
 }
 
 model CrawlJob {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  projectId  String      @db.ObjectId
+  id         String      @id @default(uuid())
+  projectId  String
   status     CrawlStatus @default(QUEUED)
   queuedAt   DateTime    @default(now())
   startedAt  DateTime?
@@ -79,8 +79,8 @@ model CrawlJob {
 }
 
 model Page {
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  crawlJobId   String  @db.ObjectId
+  id           String  @id @default(uuid())
+  crawlJobId   String
   url          String
   httpStatus   Int
   responseTime Int // in milliseconds
@@ -106,9 +106,9 @@ model Page {
 }
 
 model SeoAudit {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  pageId    String  @unique @db.ObjectId
-  projectId String? @db.ObjectId
+  id        String  @id @default(uuid())
+  pageId    String  @unique
+  projectId String?
 
   // Title metrics
   titleTag      String?
@@ -167,7 +167,7 @@ model SeoAudit {
   internalLinks String[]
   externalLinks String[]
   brokenLinks   String[]
-  issues      String[] // Any specific issues found
+  issues        String[] // Any specific issues found
 
   // Performance metrics
   loadTime Int? // in milliseconds
@@ -217,45 +217,45 @@ enum CrawlStatus {
 }
 
 model KeywordResearch {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  name            String
-  description     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  seedKeywords    String[]
-  searchEngine    SearchEngine @default(GOOGLE)
-  location        String @default("Global")
-  language        String @default("en")
-  device          Device @default(DESKTOP)
+  seedKeywords String[]
+  searchEngine SearchEngine @default(GOOGLE)
+  location     String       @default("Global")
+  language     String       @default("en")
+  device       Device       @default(DESKTOP)
 
   // Relations
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId String  @db.ObjectId
-  userId    String  @db.ObjectId
+  projectId String
+  userId    String
 
   @@map("keyword_research")
 }
 
 model RankHistory {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  keyword         String
-  position        Int
+  id               String       @id @default(uuid())
+  keyword          String
+  position         Int
   previousPosition Int?
-  searchEngine    SearchEngine @default(GOOGLE)
-  location        String @default("Global")
-  language        String @default("en")
-  device          Device @default(DESKTOP)
-  url             String?
-  recordedAt      DateTime @default(now())
-  createdAt       DateTime @default(now())
+  searchEngine     SearchEngine @default(GOOGLE)
+  location         String       @default("Global")
+  language         String       @default("en")
+  device           Device       @default(DESKTOP)
+  url              String?
+  recordedAt       DateTime     @default(now())
+  createdAt        DateTime     @default(now())
 
   // Relations
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId String  @db.ObjectId
-  userId    String  @db.ObjectId
+  projectId String
+  userId    String
 
   @@index([projectId, keyword])
   @@index([recordedAt])
@@ -263,39 +263,39 @@ model RankHistory {
 }
 
 model LocalListing {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  businessName    String
-  address         String
-  city            String
-  state           String?
-  zipCode         String
-  country         String @default("US")
-  phone           String?
-  website         String?
-  category        String?
-  
+  id           String  @id @default(uuid())
+  businessName String
+  address      String
+  city         String
+  state        String?
+  zipCode      String
+  country      String  @default("US")
+  phone        String?
+  website      String?
+  category     String?
+
   // NAP (Name, Address, Phone) consistency
-  napScore        Float? // 0-100
-  citationCount   Int @default(0)
-  inconsistentCitationsCount Int @default(0)
-  
+  napScore                   Float? // 0-100
+  citationCount              Int    @default(0)
+  inconsistentCitationsCount Int    @default(0)
+
   // Google My Business info
   googleMyBusinessId String?
   googleRating       Float?
-  googleReviewCount  Int @default(0)
-  
+  googleReviewCount  Int     @default(0)
+
   // Local SEO metrics
-  localRankPosition  Int?
-  localSearchVolume  Int?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  localRankPosition Int?
+  localSearchVolume Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId String  @db.ObjectId
-  userId    String  @db.ObjectId
+  projectId String
+  userId    String
 
   @@index([projectId])
   @@index([city, state])
@@ -304,16 +304,16 @@ model LocalListing {
 
 // User model
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(uuid())
   name          String?
-  email         String   @unique
+  email         String    @unique
   emailVerified DateTime?
   image         String?
   password      String?
   isAdmin       Boolean   @default(false)
 
   // Subscription Info
-  subscriptionId String? @db.ObjectId
+  subscriptionId String?
 
   // Billing
   intasendCustomerId String?
@@ -345,7 +345,7 @@ model User {
 
 // Subscription Plan model
 model SubscriptionPlan {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  id          String  @id @default(uuid())
   name        String // "Free", "Pro", "Enterprise"
   displayName String // "Professional Plan"
   description String?
@@ -396,18 +396,18 @@ model SubscriptionPlan {
 
 // Subscription model
 model Subscription {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   // User Information
-  userId String @db.ObjectId
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Plan Information
-  planId String           @db.ObjectId
+  planId String
   plan   SubscriptionPlan @relation(fields: [planId], references: [id])
 
   // Transaction Information
-  transactionId String?      @db.ObjectId
+  transactionId String?
   transaction   Transaction? @relation(fields: [transactionId], references: [id])
 
   // Billing
@@ -436,14 +436,14 @@ model Subscription {
 
 // Transaction model
 model Transaction {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   // User Information
-  userId String @db.ObjectId
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Plan Information
-  planId String           @db.ObjectId
+  planId String
   plan   SubscriptionPlan @relation(fields: [planId], references: [id])
 
   // Transaction Details
@@ -468,10 +468,10 @@ model Transaction {
 
 // Subscription Usage model
 model SubscriptionUsage {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   // User Information
-  userId String @db.ObjectId
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Usage Type
@@ -493,8 +493,8 @@ model SubscriptionUsage {
 }
 
 model Account {
-  id                String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String  @db.ObjectId
+  id                String  @id @default(uuid())
+  userId            String
   type              String
   provider          String
   providerAccountId String
@@ -512,20 +512,20 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  id           String   @id @default(uuid())
   sessionToken String   @unique
-  userId       String   @db.ObjectId
+  userId       String
   expires      DateTime
 
   // New fields for access and refresh tokens
-  accessToken     String?  
-  refreshToken    String   @unique
+  accessToken     String?
+  refreshToken    String    @unique
   accessTokenExp  DateTime // 15 minutes from creation
   refreshTokenExp DateTime // 7 days from creation
-  isRevoked       Boolean  @default(false)
+  isRevoked       Boolean   @default(false)
   revokedAt       DateTime?
-  lastUsedAt      DateTime @default(now())
-  deviceInfo      String?  // User agent or device identifier
+  lastUsedAt      DateTime  @default(now())
+  deviceInfo      String? // User agent or device identifier
   ipAddress       String?
 
   createdAt DateTime @default(now())
@@ -540,7 +540,7 @@ model Session {
 }
 
 model Verification {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  id         String    @id @default(uuid())
   identifier String
   value      String
   expiresAt  DateTime
@@ -551,8 +551,8 @@ model Verification {
 }
 
 model AnalysisReport {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  projectId String  @db.ObjectId
+  id        String  @id @default(uuid())
+  projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   reportType      ReportType
@@ -574,8 +574,8 @@ model AnalysisReport {
 }
 
 model KeywordRanking {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  projectId String  @db.ObjectId
+  id        String  @id @default(uuid())
+  projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   keyword          String
@@ -602,8 +602,8 @@ model KeywordRanking {
 }
 
 model SeoIssue {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  projectId String  @db.ObjectId
+  id        String  @id @default(uuid())
+  projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   title       String
@@ -628,13 +628,13 @@ model SeoIssue {
 }
 
 model Invoice {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   // User & Subscription
-  userId String @db.ObjectId
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  subscriptionId String?       @db.ObjectId
+  subscriptionId String?
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
 
   // IntaSend Information
@@ -680,10 +680,10 @@ model Invoice {
 }
 
 model PaymentMethod {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   // User
-  userId String @db.ObjectId
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // IntaSend
@@ -709,10 +709,10 @@ model PaymentMethod {
 }
 
 model BillingAddress {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   // User
-  userId String @db.ObjectId
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Address Details

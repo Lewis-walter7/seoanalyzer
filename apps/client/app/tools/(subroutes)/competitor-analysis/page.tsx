@@ -1,147 +1,124 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import { api } from '@/lib/api';
 import TrafficAnalysisChart from './components/TrafficAnalysisChart';
 import KeywordGapAnalysis from './components/KeywordGapAnalysis';
 import ContentAnalysis from './components/ContentAnalysis';
 import BacklinkComparison from './components/BacklinkComparison';
 import { BacklinkData, ContentMetrics, KeywordGap, TrafficData } from './components';
+import { FormCard } from '@/components/FormCard';
+import { Button } from '@/components/ui/button';
+import { toast } from 'react-hot-toast';
 
 const Page = () => {
- const [trafficData, setTrafficData] = useState<TrafficData[] | null>(null);
-const [keywordGaps, setKeywordGaps] = useState<{ competitor: string; gaps: KeywordGap[] }[] | null>(null);
-const [contentAnalysisData, setContentAnalysisData] = useState<ContentMetrics[] | null>(null);
-const [backlinkComparisonData, setBacklinkComparisonData] = useState<{ competitor: string; backlinks: BacklinkData[] }[] | null>(null);
-const [loading, setLoading] = useState(true);
+  const [targetUrl, setTargetUrl] = useState('');
+  const [competitorUrl, setCompetitorUrl] = useState('');
+  const [loading, setLoading] = useState(false);
 
+  const [trafficData, setTrafficData] = useState<TrafficData[] | null>(null);
+  const [keywordGaps, setKeywordGaps] = useState<{ competitor: string; gaps: KeywordGap[] }[] | null>(null);
+  const [contentAnalysisData, setContentAnalysisData] = useState<ContentMetrics[] | null>(null);
+  const [backlinkComparisonData, setBacklinkComparisonData] = useState<{ competitor: string; backlinks: BacklinkData[] }[] | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Mock data for demonstration - replace with actual API calls
-        const mockTrafficData = [
-          {
-            competitor: 'Competitor A',
-            organicTraffic: 150000,
-            paidTraffic: 25000,
-            totalVisitors: 175000,
-            bounceRate: 45
-          },
-          {
-            competitor: 'Competitor B',
-            organicTraffic: 120000,
-            paidTraffic: 40000,
-            totalVisitors: 160000,
-            bounceRate: 52
-          }
-        ];
-        
-        const mockKeywordGaps = [
-          {
-            competitor: 'Competitor A',
-            gaps: [
-              {
-                keyword: 'seo tools',
-                yourRank: null,
-                competitorRank: 3,
-                searchVolume: 12000,
-                difficulty: 65,
-                opportunity: 'high' as const
-              },
-              {
-                keyword: 'keyword research',
-                yourRank: 15,
-                competitorRank: 2,
-                searchVolume: 8500,
-                difficulty: 58,
-                opportunity: 'medium' as const
-              }
-            ]
-          }
-        ];
-        
-        const mockContentAnalysis = [
-          {
-            competitor: 'Competitor A',
-            totalPages: 1250,
-            averageWordCount: 1800,
-            averageLoadTime: 2.3,
-            mobileOptimized: 85,
-            contentScore: 78,
-            topPerformingContent: [
-              {
-                title: 'Complete SEO Guide 2024',
-                url: 'https://competitor-a.com/seo-guide',
-                shares: 1250,
-                backlinks: 89
-              }
-            ],
-            contentTypes: {
-              blog: 45,
-              product: 25,
-              landing: 20,
-              other: 10
-            }
-          }
-        ];
-        
-        const mockBacklinkComparison = [
-          {
-            competitor: 'Competitor A',
-            backlinks: [
-              {
-                url: 'https://competitor-a.com',
-                totalBacklinks: 15420,
-                authorityScore: 85,
-                referringDomains: 2580,
-                lostBacklinks: 45,
-                gainedBacklinks: 120,
-                competitorTrend: [1, 1, -1, 1, 1]
-              }
-            ]
-          }
-        ];
-        
-        setTrafficData(mockTrafficData);
-        setKeywordGaps(mockKeywordGaps);
-        setContentAnalysisData(mockContentAnalysis);
-        setBacklinkComparisonData(mockBacklinkComparison);
-        
-      } catch (error) {
-        console.error('Error fetching data', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleAnalyze = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    fetchData();
-  }, []);
+    if (!targetUrl || !competitorUrl) {
+      toast.error('Please enter both Target URL and Competitor URL');
+      return;
+    }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <div className="flex justify-center items-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
+    try {
+      setLoading(true);
+      toast.loading('Analyzing competitors...', { id: 'analyze' });
+
+      // Call the real API for content analysis
+      const contentData = await api.analyzeCompetitor(targetUrl, competitorUrl);
+      setContentAnalysisData(contentData);
+
+      // Clear other data as we don't have real sources for them yet
+      // In a real app, we would call other endpoints or show "Upgrade to Pro"
+      setTrafficData(null);
+      setKeywordGaps(null);
+      setBacklinkComparisonData(null);
+
+      toast.success('Analysis complete!', { id: 'analyze' });
+    } catch (error: any) {
+      console.error('Analysis failed:', error);
+      toast.error(error.message || 'Failed to analyze competitors', { id: 'analyze' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Competitor Analysis</h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">Gain insights into competitor strategies and uncover opportunities to improve your own SEO.</p>
+          <p className="text-xl text-gray-600 dark:text-gray-400">Compare your website against competitors to find content gaps and opportunities.</p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {trafficData && <TrafficAnalysisChart data={trafficData} />}
-          {keywordGaps && <KeywordGapAnalysis data={keywordGaps} />}
-          {contentAnalysisData && <ContentAnalysis data={contentAnalysisData} />}
-          {backlinkComparisonData && <BacklinkComparison data={backlinkComparisonData} />}
+
+        {/* Input Form */}
+        <div className="mb-12 max-w-3xl mx-auto">
+          <FormCard
+            title="Start Comparison"
+            description="Enter your URL and a competitor's URL to compare content metrics."
+            isLoading={loading}
+          >
+            <form onSubmit={handleAnalyze} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="targetUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Your URL
+                  </label>
+                  <input
+                    type="url"
+                    id="targetUrl"
+                    value={targetUrl}
+                    onChange={(e) => setTargetUrl(e.target.value)}
+                    placeholder="https://yoursite.com"
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="competitorUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Competitor URL
+                  </label>
+                  <input
+                    type="url"
+                    id="competitorUrl"
+                    value={competitorUrl}
+                    onChange={(e) => setCompetitorUrl(e.target.value)}
+                    placeholder="https://competitor.com"
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Analyzing...' : 'Compare Websites'}
+              </Button>
+            </form>
+          </FormCard>
+        </div>
+
+        {/* Results Grid */}
+        <div className="grid grid-cols-1 gap-8">
+          {contentAnalysisData && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <ContentAnalysis data={contentAnalysisData} />
+            </div>
+          )}
+
+          {/* Placeholders for other metrics if needed */}
+          {!contentAnalysisData && !loading && (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-12">
+              Enter URLs above to see the comparison results.
+            </div>
+          )}
         </div>
       </div>
     </div>

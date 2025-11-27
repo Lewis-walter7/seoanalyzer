@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { setJWTToken, setRefreshToken, clearAuthTokens, getJWTToken, getRefreshToken } from './jwt';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface User {
   id: string;

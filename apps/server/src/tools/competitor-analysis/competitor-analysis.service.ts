@@ -1,9 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EnhancedCrawlerService } from '../../crawler/enhanced-crawler.service';
+import { CrawlJob, CrawledPage } from '../../crawler/interfaces/crawler.interfaces';
+
+export interface ContentMetrics {
+  competitor: string;
+  totalPages: number;
+  averageWordCount: number;
+  averageLoadTime: number;
+  mobileOptimized: number;
+  contentScore: number;
+  topPerformingContent: any[];
+  contentTypes: any;
+  topicClusters?: string[];
+}
 
 @Injectable()
 export class CompetitorAnalysisService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CompetitorAnalysisService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly crawlerService: EnhancedCrawlerService,
+  ) { }
 
   async create(userId: string, createDto: { projectId: string }) {
     return {
@@ -19,6 +38,81 @@ export class CompetitorAnalysisService {
       backlinkComparison: 'Data for Backlink Comparison',
       createdAt: new Date(),
       status: 'COMPLETED'
+    };
+  }
+
+  async analyzeCompetitor(targetUrl: string, competitorUrl: string): Promise<ContentMetrics[]> {
+    this.logger.log(`Analyzing competitor: ${competitorUrl} vs ${targetUrl}`);
+
+    // Crawl target and competitor concurrently
+    const [targetResult, competitorResult] = await Promise.all([
+      this.crawlSinglePage(targetUrl),
+      this.crawlSinglePage(competitorUrl),
+    ]);
+
+    if (!targetResult || !competitorResult) {
+      throw new Error('Failed to crawl URLs');
+    }
+
+    const targetMetrics = this.calculateMetrics(targetResult, targetUrl);
+    const competitorMetrics = this.calculateMetrics(competitorResult, competitorUrl);
+
+    return [targetMetrics, competitorMetrics];
+  }
+
+  private async crawlSinglePage(url: string): Promise<CrawledPage | null> {
+    try {
+      const job: CrawlJob = {
+        id: `competitor-analysis-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        urls: [url],
+        maxPages: 1,
+        maxDepth: 0,
+        respectRobotsTxt: true,
+      };
+
+      const result = await this.crawlerService.crawl(job);
+      return result.pages[0] || null;
+    } catch (error) {
+      this.logger.error(`Failed to crawl ${url}:`, error);
+      return null;
+    }
+  }
+
+  private calculateMetrics(page: CrawledPage, url: string): ContentMetrics {
+    // Basic word count estimation
+    const textContent = page.html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const wordCount = textContent.split(' ').length;
+
+    // Simple content score based on meta tags and content length
+    let score = 60; // Base score
+    if (page.meta?.description) score += 10;
+    if (page.title) score += 10;
+    if (wordCount > 500) score += 10;
+    if (wordCount > 1000) score += 10;
+    if (page.loadTime < 1000) score += 10; // Fast load time bonus
+
+    return {
+      competitor: new URL(url).hostname,
+      totalPages: 1, // Single page analysis for now
+      averageWordCount: wordCount,
+      averageLoadTime: page.loadTime / 1000, // Convert to seconds
+      mobileOptimized: page.meta?.viewport ? 100 : 0, // Simple check
+      contentScore: Math.min(100, score),
+      topPerformingContent: [
+        {
+          title: page.title || 'Untitled',
+          url: page.url,
+          shares: 0, // Cannot get without external API
+          backlinks: 0, // Cannot get without external API
+          organicTraffic: 0 // Cannot get without external API
+        }
+      ],
+      contentTypes: {
+        blog: url.includes('blog') ? 100 : 0,
+        product: url.includes('product') ? 100 : 0,
+        landing: 0,
+        other: 0
+      }
     };
   }
 
@@ -85,7 +179,13 @@ export class CompetitorAnalysisService {
   }
 
   async performContentAnalysis(projectId: string) {
-    // Simulate content analysis data
+    // Legacy method - keeping for compatibility but could be updated to use real data if project has URL
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    if (project) {
+      // Could potentially trigger real analysis here if we had competitor URLs stored
+    }
+
+    // Return mock data for now to match existing frontend expectations if called directly
     return [
       {
         competitor: 'example.com',
@@ -101,13 +201,6 @@ export class CompetitorAnalysisService {
             shares: 1250,
             backlinks: 89,
             organicTraffic: 15000
-          },
-          {
-            title: 'Best SEO Tools Comparison',
-            url: 'https://example.com/seo-tools-comparison',
-            shares: 950,
-            backlinks: 67,
-            organicTraffic: 12000
           }
         ],
         contentTypes: {
@@ -136,16 +229,6 @@ export class CompetitorAnalysisService {
             gainedBacklinks: 120,
             competitorTrend: [1, 1, -1, 1, 1],
             topReferrers: ['techcrunch.com', 'forbes.com', 'entrepreneur.com']
-          },
-          {
-            url: 'https://example.com/blog',
-            totalBacklinks: 8920,
-            authorityScore: 78,
-            referringDomains: 1240,
-            lostBacklinks: 23,
-            gainedBacklinks: 85,
-            competitorTrend: [1, 1, 1, -1, 1],
-            topReferrers: ['medium.com', 'hackernoon.com', 'dev.to']
           }
         ]
       }

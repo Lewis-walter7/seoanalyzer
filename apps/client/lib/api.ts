@@ -27,7 +27,7 @@ const transformError = (error: any): ApiError => {
     const status = error.response?.status;
     const message = error.response?.data?.message || error.response?.data?.error || error.message;
     const code = error.code;
-    
+
     return {
       message,
       status,
@@ -35,7 +35,7 @@ const transformError = (error: any): ApiError => {
       details: error.response?.data
     };
   }
-  
+
   return {
     message: error.message || 'An unexpected error occurred',
     details: error
@@ -49,7 +49,7 @@ export class ApiClient {
 
   constructor(baseURL: string = API_BASE_URL, useTokenAuth: boolean = false, config?: CreateAxiosDefaults) {
     this.useTokenAuth = useTokenAuth;
-    
+
     this.axiosInstance = axios.create({
       baseURL,
       timeout: 30000,
@@ -83,7 +83,7 @@ export class ApiClient {
       (response: AxiosResponse) => response,
       async (error) => {
         const originalRequest = error.config;
-        
+
         // Handle 401 unauthorized with token refresh
         if (
           error.response?.status === 401 &&
@@ -91,7 +91,7 @@ export class ApiClient {
           !originalRequest._retry
         ) {
           originalRequest._retry = true;
-          
+
           try {
             await authApi.refreshToken();
             const newToken = tokenStorage.getAccessToken();
@@ -107,7 +107,7 @@ export class ApiClient {
             return Promise.reject(transformError(new Error('Session expired. Please log in again.')));
           }
         }
-        
+
         return Promise.reject(transformError(error));
       }
     );
@@ -177,7 +177,7 @@ export const internalApi = new ApiClient(API_BASE_URL, true); // For Next.js API
 export const api = {
   // External API (NestJS backend)
   external: externalApi,
-  
+
   // Internal API (Next.js API routes)
   internal: internalApi,
 
@@ -229,6 +229,10 @@ export const api = {
     return externalApi.delete(`/projects/${id}`);
   },
 
+  async analyzeProject(id: string) {
+    return externalApi.post(`/v1/projects/${id}/analyze`);
+  },
+
   // Subscriptions
   async getBackendSubscription() {
     return externalApi.get('/v1/subscription/me');
@@ -262,6 +266,10 @@ export const api = {
 
   async createCompetitorAnalysis(projectId: string) {
     return externalApi.post('/api/tools/competitor-analysis', { projectId });
+  },
+
+  async analyzeCompetitor(targetUrl: string, competitorUrl: string) {
+    return externalApi.post('/api/tools/competitor-analysis/analyze', { targetUrl, competitorUrl });
   },
 
   // General external API methods

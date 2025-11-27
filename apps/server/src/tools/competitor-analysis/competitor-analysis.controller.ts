@@ -17,7 +17,7 @@ import type { AuthenticatedUser } from '../../auth/user.interface';
 
 @Controller('api/tools/competitor-analysis')
 export class CompetitorAnalysisController {
-  constructor(private readonly competitorAnalysisService: CompetitorAnalysisService) {}
+  constructor(private readonly competitorAnalysisService: CompetitorAnalysisService) { }
 
   @UseGuards(AuthGuard)
   @Post()
@@ -26,6 +26,15 @@ export class CompetitorAnalysisController {
     @Body() createDto: { projectId: string },
   ) {
     return this.competitorAnalysisService.create(user.id, createDto);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('analyze')
+  async analyzeCompetitor(
+    @User() user: AuthenticatedUser,
+    @Body() body: { targetUrl: string; competitorUrl: string },
+  ) {
+    return this.competitorAnalysisService.analyzeCompetitor(body.targetUrl, body.competitorUrl);
   }
 
   @UseGuards(AuthGuard)

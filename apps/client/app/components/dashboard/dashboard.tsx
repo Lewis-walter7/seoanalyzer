@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CreateProjectModal from './CreateProjectModal';
 import ProjectSelector from './ProjectSelector';
@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'projects' | 'tools'>('projects');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { user } = useAuth();
-  
+
   const {
     projects: userProjects,
     selectedProject,
@@ -22,8 +22,25 @@ export default function Dashboard() {
     selectProject,
     createProject,
     deleteProject,
-    refreshProjects
+    refreshProjects,
+    analyzeProject,
+    fetchProjects
   } = useProjects();
+
+  // Poll for updates when project is analyzing
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (selectedProject && (selectedProject.crawlStatus === 'RUNNING' || selectedProject.crawlStatus === 'QUEUED')) {
+      intervalId = setInterval(() => {
+        fetchProjects(true); // Force refresh
+      }, 5000);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [selectedProject, fetchProjects]);
 
   console.log('🏠 Dashboard render:', {
     user,
@@ -43,10 +60,11 @@ export default function Dashboard() {
     }
   };
 
-  const handleProjectCreated = async (projectData: { name: string; 
-    url: string; description?: string, 
-    targetKeywords?: string[], 
-    competitors?: string[] 
+  const handleProjectCreated = async (projectData: {
+    name: string;
+    url: string; description?: string,
+    targetKeywords?: string[],
+    competitors?: string[]
   }) => {
     const result = await createProject(projectData);
     if (result.success) {
@@ -70,8 +88,14 @@ export default function Dashboard() {
     }
   };
 
-  const handleAnalyzeProject = (projectId: string) => {
-    router.push(`/project/${projectId}/auditresults`);
+  const handleAnalyzeProject = async (projectId: string) => {
+    const result = await analyzeProject(projectId);
+    if (result.success) {
+      toast.success('Analysis started! Redirecting to reports...');
+      router.push(`/project/${projectId}/auditresults`);
+    } else {
+      toast.error(result.error || 'Failed to start analysis');
+    }
   };
 
   const handleViewReports = (projectId: string) => {
@@ -135,22 +159,20 @@ export default function Dashboard() {
         {/* Tabs */}
         <div className="flex space-x-1 sm:space-x-2 mb-6 lg:mb-8 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-lg">
           <button
-            className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base min-h-[44px] ${
-              activeTab === 'projects' 
-                ? 'bg-linear-to-r from-blue-500 to-purple-500 text-white shadow-md' 
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+            className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base min-h-[44px] ${activeTab === 'projects'
+              ? 'bg-linear-to-r from-blue-500 to-purple-500 text-white shadow-md'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
             onClick={() => handleTabClick('projects')}
             aria-label="View projects tab"
           >
             <span className="hidden sm:inline">📊 </span>Projects
           </button>
           <button
-            className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base min-h-[44px] ${
-              activeTab === 'tools' 
-                ? 'bg-linear-to-r from-blue-500 to-purple-500 text-white shadow-md' 
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
+            className={`flex-1 sm:flex-none px-3 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-sm sm:text-base min-h-[44px] ${activeTab === 'tools'
+              ? 'bg-linear-to-r from-blue-500 to-purple-500 text-white shadow-md'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
             onClick={() => handleTabClick('tools')}
             aria-label="View tools tab"
           >
@@ -168,11 +190,11 @@ export default function Dashboard() {
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-6 space-y-4 lg:space-y-0">
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center mb-3 space-y-2 sm:space-y-0">
-                <div className="bg-linear-to-r from-green-500 to-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold mr-0 sm:mr-3 w-fit" aria-label="Project selected">
-                  SELECTED
-                </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">{selectedProject.name}</h2>
-              </div>
+                      <div className="bg-linear-to-r from-green-500 to-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold mr-0 sm:mr-3 w-fit" aria-label="Project selected">
+                        SELECTED
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">{selectedProject.name}</h2>
+                    </div>
                     <a href={selectedProject.url} className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 text-sm font-medium break-all" target="_blank">
                       🌐 {selectedProject.url}
                     </a>
@@ -231,13 +253,13 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                    <button 
+                    <button
                       onClick={() => handleAnalyzeProject(selectedProject.id)}
                       className="bg-linear-to-r from-green-500 to-emerald-500 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 text-sm sm:text-base min-h-[44px] min-w-[44px]"
                     >
                       🚀 Analyze
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleViewReports(selectedProject.id)}
                       className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 text-sm sm:text-base min-h-[44px] min-w-[44px]"
                     >
@@ -267,7 +289,7 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-            )}            
+            )}
           </div>
         )}
 

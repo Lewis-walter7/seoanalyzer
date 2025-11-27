@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { CrawlerModule } from '../crawler/crawler.module';
 import { KeywordResearchController } from './keyword-research/keyword-research.controller';
 import { KeywordResearchService } from './keyword-research/keyword-research.service';
 import { SiteAuditController } from './site-audit/site-audit.controller';
@@ -20,7 +21,7 @@ import { SchemaValidatorController } from './schema-validator/schema-validator.c
 import { SchemaValidatorService } from './schema-validator/schema-validator.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, CrawlerModule],
   controllers: [
     KeywordResearchController,
     SiteAuditController,
@@ -55,4 +56,4 @@ import { SchemaValidatorService } from './schema-validator/schema-validator.serv
     SchemaValidatorService,
   ],
 })
-export class ToolsModule {}
+export class ToolsModule { }

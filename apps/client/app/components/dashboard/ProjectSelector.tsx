@@ -26,12 +26,12 @@ interface ProjectSelectorProps {
   onDeleteProject?: (projectId: string) => void;
 }
 
-export default function ProjectSelector({ 
-  projects, 
-  selectedProject, 
-  onProjectSelect, 
+export default function ProjectSelector({
+  projects,
+  selectedProject,
+  onProjectSelect,
   onCreateNew,
-  onDeleteProject 
+  onDeleteProject
 }: ProjectSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -73,13 +73,13 @@ export default function ProjectSelector({
             </>
           )}
         </div>
-        <ChevronDown 
-          className={`w-5 h-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+        <ChevronDown
+          className={`w-5 h-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full mt-2 bg-white dark:bg-gray-800 shadow-2xl rounded-xl z-50 w-full min-w-[320px] border border-gray-100 dark:border-gray-700 max-h-96 overflow-y-auto">
+        <div className="absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 shadow-2xl rounded-xl z-50 w-full min-w-[320px] border border-gray-100 dark:border-gray-700 max-h-96 overflow-y-auto">
           {/* Create New Project Button */}
           <button
             onClick={() => {
@@ -108,11 +108,10 @@ export default function ProjectSelector({
                 {projects.map((project) => (
                   <div
                     key={project.id}
-                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 group ${
-                      selectedProject?.id === project.id
+                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 group ${selectedProject?.id === project.id
                         ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
+                      }`}
                     onClick={() => handleProjectSelect(project)}
                   >
                     <div className="flex items-start justify-between">
@@ -126,7 +125,7 @@ export default function ProjectSelector({
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-2">
                           {project.url}
                         </p>
-                        
+
                         {/* Project Stats */}
                         <div className="flex items-center space-x-3 text-xs">
                           <span className={`px-2 py-1 rounded-full font-medium ${getStatusColor(project.crawlStatus)}`}>

@@ -1,7 +1,8 @@
 'use client';
 
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { AuthService, User } from '@/lib/auth';
+import { authApi, tokenStorage, type User } from '@/lib/auth-client';
+
 
 interface AuthContextType {
   user: User | null;
@@ -26,9 +27,9 @@ export function AuthProvider({ children }: Props) {
     // Check if user is authenticated on mount
     const checkAuth = () => {
       try {
-        const isAuth = AuthService.isAuthenticated();
+        const isAuth = authApi.isAuthenticated();
         if (isAuth) {
-          const currentUser = AuthService.getCurrentUser();
+          const currentUser = authApi.getCurrentUser();
           setUser(currentUser);
         }
       } catch (error) {
@@ -43,7 +44,7 @@ export function AuthProvider({ children }: Props) {
 
   const login = async (email: string, password: string) => {
     try {
-      const authData = await AuthService.login({ email, password });
+      const authData = await authApi.login({ email, password });
       setUser(authData.user);
     } catch (error) {
       throw error;
@@ -52,7 +53,7 @@ export function AuthProvider({ children }: Props) {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const authData = await AuthService.register({ name, email, password });
+      const authData = await authApi.register({ name, email, password });
       setUser(authData.user);
     } catch (error) {
       throw error;
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: Props) {
 
   const logout = async () => {
     try {
-      await AuthService.logout();
+      await authApi.logout();
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);

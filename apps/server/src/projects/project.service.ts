@@ -71,7 +71,7 @@ export class ProjectService {
     private readonly prisma: PrismaService,
     private readonly subscriptionService: SubscriptionService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   /**
    * Get all projects for a user
@@ -323,6 +323,12 @@ export class ProjectService {
       },
     });
 
+    // Update project status to QUEUED
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data: { crawlStatus: 'QUEUED' },
+    });
+
     // Trigger the analysis by emitting a project analysis event
     const analysisEvent = {
       projectId: project.id,
@@ -331,7 +337,7 @@ export class ProjectService {
       projectName: project.name,
       crawlJobId: crawlJob.id,
     };
-    
+
     this.eventEmitter.emit('project.analysis.requested', analysisEvent);
 
     return {
@@ -382,7 +388,7 @@ export class ProjectService {
       for (const audit of seoAudits) {
         const crawlJobId = audit.page.crawlJobId;
         const auditId = crawlJobId; // Use crawlJobId as the audit session ID
-        
+
         // For each Page, select SEO metrics: titleTag, metaDescription, h1Count, imgMissingAlt, totalLinks, performanceScore, etc.
         const seoAuditPage: SeoAuditPage = {
           id: audit.page.id,
@@ -421,7 +427,7 @@ export class ProjectService {
       const audits: AuditResponse[] = Array.from(auditMap.values())
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      
+
       return { audits };
 
     } catch (error) {
@@ -469,14 +475,14 @@ export class ProjectService {
       url: project.url || `https://${project.domain}`,
       domain: project.domain,
       description: project.description,
-      onPageScore: lastCrawlJob?.onPageScore ? `${lastCrawlJob.onPageScore}%` : '0%',
-      problems: lastCrawlJob?.problemsCount?.toString() || '0',
-      backlinks: lastCrawlJob?.backlinksCount?.toString() || '0',
-      crawlStatus: lastCrawlJob ? 'Analyzed' : 'Not analyzed',
-      lastCrawl: lastCrawlJob 
-        ? new Date(lastCrawlJob.createdAt).toLocaleDateString() 
+      onPageScore: project.onPageScore ? `${Math.round(project.onPageScore)}%` : '0%',
+      problems: project.totalIssues?.toString() || '0',
+      backlinks: '0', // Placeholder as this isn't aggregated yet
+      crawlStatus: lastCrawlJob ? (project.crawlStatus || 'Analyzed') : 'Not analyzed',
+      lastCrawl: project.lastCrawl
+        ? new Date(project.lastCrawl).toLocaleDateString()
         : 'Never',
-      pages: crawlCount.toString(),
+      pages: project.totalPages?.toString() || '0',
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
     };
